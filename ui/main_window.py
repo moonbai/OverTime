@@ -28,7 +28,7 @@ class MainWindow:
         # 延迟初始化
         self.root.after(100, self.update_summary)
         self.root.after(200, self.refresh_records)
-        self.root.after(300, self._force_set_today)  # 强制设置今天日期
+        self.root.after(300, self._force_set_today)
 
     def create_widgets(self):
         """创建界面组件 -标签页布局"""
@@ -92,49 +92,45 @@ class MainWindow:
         status_bar.pack(side='bottom', fill='x', padx=10, pady=2)
 
     def create_input_tab(self, parent):
-        """数据录入标签页"""
+        """数据录入标签页 - 优化布局"""
         # 节假日提示
-        holiday_frame = tk.LabelFrame(parent, text="节假日判断", font=("Arial", 9, "bold"), padx=10, pady=5)
-        holiday_frame.pack(fill='x', pady=(0, 10))
+        holiday_frame = tk.LabelFrame(parent, text="节假日判断", font=("Arial", 9, "bold"), padx=5, pady=3)
+        holiday_frame.pack(fill='x', pady=(0, 5))
 
         self.holiday_info = tk.Label(holiday_frame, text="", font=("Arial", 8))
-        self.holiday_info.pack(anchor='w')
+        self.holiday_info.pack(anchor='w', padx=5)
         self.update_holiday_info()
 
         # 录入表单
-        form_frame = tk.LabelFrame(parent, text="填写表单", font=("Arial", 9, "bold"), padx=10, pady=10)
-        form_frame.pack(fill='x', pady=(0, 10))
+        form_frame = tk.LabelFrame(parent, text="填写表单", font=("Arial", 9, "bold"), padx=5, pady=5)
+        form_frame.pack(fill='x', pady=(0, 5), expand=False)
 
-        # 用户
+        # 用户和日期在同一行
         row1 = tk.Frame(form_frame)
-        row1.pack(fill='x', pady=5)
-        tk.Label(row1, text="用户:*", width=7, anchor='w').pack(side='left')
-        self.user_entry = tk.Entry(row1, width=15)
-        self.user_entry.pack(side='left', padx=5)
+        row1.pack(fill='x', pady=3)
+        tk.Label(row1, text="用户:*", width=6, anchor='w').pack(side='left')
+        self.user_entry = tk.Entry(row1, width=12)
+        self.user_entry.pack(side='left', padx=2)
 
-        # 填充默认用户
+        # 立即读取默认用户（而不是延迟）
         default_user = self.config_manager.get('last_user', '')
         if default_user:
             self.user_entry.insert(0, default_user)
+            print(f"✓ 已加载默认用户: {default_user}")  # 调试信息
 
-        # 日期 - 使用日历选择器
-        tk.Label(row1, text="日期:*", width=7, anchor='w').pack(side='left', padx=(10, 0))
+        # 日期
+        tk.Label(row1, text="日期:*", width=6, anchor='w').pack(side='left', padx=(10, 0))
+        self.date_display = tk.Entry(row1, width=12, state='readonly', readonlybackground='white')
+        self.date_display.pack(side='left', padx=2)
 
-        # 日期显示框（只读）
-        self.date_display = tk.Entry(row1, width=15, state='readonly', readonlybackground='white')
-        self.date_display.pack(side='left', padx=5)
-
-        # 日历选择按钮
         tk.Button(row1, text="📅", command=self.open_calendar,
-                 bg="#2196F3", fg="white", width=3).pack(side='left', padx=5)
+                  bg="#2196F3", fg="white", width=2).pack(side='left', padx=2)
 
-        # 隐藏的真实日期输入框（用于存储和检测）
-        self.date_entry = tk.Entry(row1, width=15)
+        self.date_entry = tk.Entry(row1, width=12)
         self.date_entry.pack_forget()
 
-        # 检测结果
         self.result_label = tk.Label(row1, text="等待日期...", font=("Arial", 8), fg="#666666")
-        self.result_label.pack(side='left', padx=10)
+        self.result_label.pack(side='left', padx=5)
 
         # 绑定事件
         self.date_display.bind('<FocusOut>', lambda e: self.update_date_and_detect())
@@ -142,24 +138,24 @@ class MainWindow:
 
         # 日期类型
         row2 = tk.Frame(form_frame)
-        row2.pack(fill='x', pady=5)
-        tk.Label(row2, text="类型:*", width=7, anchor='w').pack(side='left')
+        row2.pack(fill='x', pady=3)
+        tk.Label(row2, text="类型:*", width=6, anchor='w').pack(side='left')
         self.day_type = tk.StringVar()
         day_types = [("工作日", "工作日"), ("休息日", "休息日"), ("节假日", "节假日"), ("调休日", "调休日")]
         for i, (text, value) in enumerate(day_types):
             rb = tk.Radiobutton(row2, text=text, variable=self.day_type, value=value)
-            rb.pack(side='left', padx=8)
+            rb.pack(side='left', padx=4)
             if i == 0:
                 rb.select()
 
         # 操作选择
         row3 = tk.Frame(form_frame)
-        row3.pack(fill='x', pady=5)
-        tk.Label(row3, text="操作:*", width=7, anchor='w').pack(side='left')
+        row3.pack(fill='x', pady=3)
+        tk.Label(row3, text="操作:*", width=6, anchor='w').pack(side='left')
         self.is_leave = tk.BooleanVar()
         self.is_leave.set(False)
         tk.Checkbutton(row3, text="请假", variable=self.is_leave,
-                      command=self.toggle_leave_options).pack(side='left', padx=(0, 20))
+                       command=self.toggle_leave_options).pack(side='left', padx=(0, 10))
 
         # 动态区域
         self.dynamic_frame = tk.Frame(row3)
@@ -167,9 +163,9 @@ class MainWindow:
 
         # 加班时长
         self.work_frame = tk.Frame(self.dynamic_frame)
-        tk.Label(self.work_frame, text="加班时长:", width=8, anchor='w').pack(side='left')
-        self.work_hours = tk.Entry(self.work_frame, width=8)
-        self.work_hours.pack(side='left', padx=5)
+        tk.Label(self.work_frame, text="加班:", width=4, anchor='w').pack(side='left')
+        self.work_hours = tk.Entry(self.work_frame, width=6)
+        self.work_hours.pack(side='left', padx=2)
         self.work_hours.insert(0, self.config_manager.get('default_hours', '8'))
         tk.Label(self.work_frame, text="小时", font=("Arial", 8)).pack(side='left')
         self.work_frame.pack(side='left')
@@ -181,12 +177,15 @@ class MainWindow:
 
         # 提交按钮
         btn_frame = tk.Frame(form_frame)
-        btn_frame.pack(fill='x', pady=10)
+        btn_frame.pack(fill='x', pady=5)
         tk.Button(btn_frame, text="✅ 提交记录", command=self.submit_record,
-                 bg="#4CAF50", fg="white", width=15, font=("Arial", 9, "bold")).pack(side='left', padx=3)
+                  bg="#4CAF50", fg="white", width=15, font=("Arial", 9, "bold")).pack(side='left', padx=3)
 
-        # 强制设置今天日期（在创建完成后立即执行）
+        # 延迟设置日期和检测
         self.root.after(100, self._force_set_today)
+        # 确保用户配置正确加载的调试信息
+        print(f"配置中的默认用户: {self.config_manager.get('last_user', '未设置')}")
+
 
     def _force_set_today(self):
         """强制设置今天日期"""
@@ -307,13 +306,13 @@ class MainWindow:
                 self.work_frame.pack_forget()
 
                 # 创建新的
-                tk.Label(self.leave_frame, text="请假类型:", width=8, anchor='w').pack(side='left')
+                tk.Label(self.leave_frame, text="请假类型:", width=6, anchor='w').pack(side='left')
                 self.leave_type = tk.StringVar()
 
                 leave_types = self.config_manager.get('leave_types', ['事假', '病假', '年假', '婚假', '产假'])
                 self.leave_dropdown = ttk.Combobox(self.leave_frame, textvariable=self.leave_type,
-                                                  values=leave_types, width=10, state="readonly")
-                self.leave_dropdown.pack(side='left', padx=5)
+                                                  values=leave_types, width=8, state="readonly")
+                self.leave_dropdown.pack(side='left', padx=2)
                 self.leave_dropdown.bind("<<ComboboxSelected>>", self.toggle_leave_hours)
 
                 # 请假时长
@@ -323,7 +322,7 @@ class MainWindow:
                 for text, value in leave_hours:
                     rb = tk.Radiobutton(self.leave_hour_frame, text=text,
                                        variable=self.leave_hours_var, value=value)
-                    rb.pack(side='left', padx=5)
+                    rb.pack(side='left', padx=3)
 
                 self.leave_frame.pack(side='left')
             else:
@@ -336,7 +335,7 @@ class MainWindow:
         """仅在选择事假时显示时长选项"""
         try:
             if self.leave_type.get() == "事假":
-                self.leave_hour_frame.pack(side='left', padx=10)
+                self.leave_hour_frame.pack(side='left', padx=5)
             else:
                 self.leave_hour_frame.pack_forget()
         except:
@@ -350,7 +349,7 @@ class MainWindow:
             # 创建弹出窗口
             cal_window = tk.Toplevel(self.root)
             cal_window.title("选择日期")
-            cal_window.geometry("300x320")
+            cal_window.geometry("280x320")
             cal_window.transient(self.root)
             cal_window.grab_set()
 
@@ -361,7 +360,7 @@ class MainWindow:
                           month=datetime.now().month,
                           day=datetime.now().day,
                           date_pattern='yyyy-mm-dd')
-            cal.pack(padx=10, pady=10)
+            cal.pack(padx=5, pady=5)
 
             # 确认按钮
             def select_date():
@@ -381,7 +380,7 @@ class MainWindow:
                 self.auto_detect_day_type()  # 选择后自动检测
 
             tk.Button(cal_window, text="确定", command=select_date,
-                     bg="#4CAF50", fg="white", width=10).pack(pady=10)
+                     bg="#4CAF50", fg="white", width=8).pack(pady=5)
 
         except ImportError:
             messagebox.showinfo("提示", "未安装tkcalendar库\n\n请执行安装：\npip install tkcalendar\n\n或直接手动输入日期（格式：YYYY-MM-DD）")
@@ -766,53 +765,152 @@ class MainWindow:
             messagebox.showerror("错误", f"导出失败: {str(e)}")
 
     def view_all_records(self):
-        """查看所有记录"""
+        """查看所有记录 - 表格形式"""
         try:
             top = tk.Toplevel(self.root)
             top.title("所有记录")
-            top.geometry("1000x500")
+            top.geometry("1100x500")
 
-            frame = tk.Frame(top)
-            frame.pack(fill='both', expand=True, padx=10, pady=10)
+            # 主框架
+            main_frame = tk.Frame(top)
+            main_frame.pack(fill='both', expand=True, padx=10, pady=10)
 
-            text_frame = tk.Frame(frame)
-            text_frame.pack(fill='both', expand=True)
-
-            scrollbar = tk.Scrollbar(text_frame)
-            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-            text = tk.Text(text_frame, wrap=tk.NONE, yscrollcommand=scrollbar.set, font=("Courier", 9))
-            text.pack(side=tk.LEFT, fill='both', expand=True)
-            scrollbar.config(command=text.yview)
-
-            btn_frame = tk.Frame(frame)
+            # 顶部按钮区域
+            btn_frame = tk.Frame(main_frame)
             btn_frame.pack(fill='x', pady=5)
 
-            def load_data():
-                try:
-                    records = self.data_manager.get_all_records()
-                    if records:
-                        headers = ['日期', '用户', '类型', '工作时长', '请假类型', '请假时长', '提交时间', '工资']
-                        text.insert('1.0', "\t".join(headers) + "\n")
-                        for record in records:
-                            text.insert(tk.END, "\t".join(record) + "\n")
-                    else:
-                        text.insert('1.0', "暂无记录")
-                except Exception as e:
-                    text.insert('1.0', f"读取错误: {str(e)}")
+            tk.Button(btn_frame, text="🔄 刷新", command=lambda: load_data(True),
+                     bg="#4CAF50", fg="white", width=10).pack(side='left', padx=3)
 
-            tk.Button(btn_frame, text="刷新", command=load_data,
-                     bg="#4CAF50", fg="white", width=8).pack(side='left', padx=5)
+            tk.Button(btn_frame, text="📊 导出Excel", command=self.export_to_excel,
+                     bg="#2196F3", fg="white", width=12).pack(side='left', padx=3)
 
-            tk.Button(btn_frame, text="导出Excel", command=self.export_to_excel,
-                     bg="#2196F3", fg="white", width=12).pack(side='left', padx=5)
+            tk.Button(btn_frame, text="🔍筛选", command=self.open_filter_dialog,
+                     bg="#FF9800", fg="white", width=10).pack(side='left', padx=3)
 
-            tk.Button(btn_frame, text="关闭", command=top.destroy,
-                     bg="#E0E0E0", width=8).pack(side='right', padx=5)
+            tk.Button(btn_frame, text="✖ 关闭", command=top.destroy,
+                     bg="#E0E0E0", width=10).pack(side='right', padx=3)
 
+            # 表格容器
+            table_frame = tk.Frame(main_frame)
+            table_frame.pack(fill='both', expand=True)
+
+            # 滚动条
+            scrollbar_y = tk.Scrollbar(table_frame, orient=tk.VERTICAL)
+            scrollbar_y.pack(side=tk.RIGHT, fill=tk.Y)
+
+            scrollbar_x = tk.Scrollbar(table_frame, orient=tk.HORIZONTAL)
+            scrollbar_x.pack(side=tk.BOTTOM, fill=tk.X)
+
+            # 表格控件
+            tree = ttk.Treeview(table_frame,
+                               columns=('日期', '用户', '类型', '工作时长', '请假类型', '请假时长', '提交时间', '工资'),
+                               show='headings',
+                               yscrollcommand=scrollbar_y.set,
+                               xscrollcommand=scrollbar_x.set)
+
+            scrollbar_y.config(command=tree.yview)
+            scrollbar_x.config(command=tree.xview)
+
+            # 配置列
+            columns = [
+                ('日期', 100), ('用户', 80), ('类型', 80), ('工作时长', 70),
+                ('请假类型', 80), ('请假时长', 70), ('提交时间', 130), ('工资', 80)
+            ]
+
+            for col, width in columns:
+                tree.heading(col, text=col)
+                tree.column(col, width=width, anchor='center', minwidth=width)
+
+            tree.pack(fill='both', expand=True)
+
+            # 数据加载函数
+            def load_data(refresh=False):
+                # 清空现有数据
+                for item in tree.get_children():
+                    tree.delete(item)
+
+                # 获取数据
+                records, total = self.data_manager.get_all_records_with_total()
+
+                if not records:
+                    tree.insert('', 'end', values=('暂无数据', '', '', '', '', '', '', ''))
+                    return
+
+                # 插入数据
+                for record in records:
+                    tree.insert('', 'end', values=record[:8])
+
+                # 更新状态
+                if hasattr(self, 'status_var'):
+                    self.status_var.set(f"共 {total} 条记录")
+
+            #右键菜单
+            def popup_menu(event):
+                menu = tk.Menu(top, tearoff=0)
+                menu.add_command(label="查看详情", command=lambda: show_detail())
+                menu.add_command(label="删除记录", command=lambda: delete_record())
+                menu.tk_popup(event.x_root, event.y_root)
+
+            def show_detail():
+                selected = tree.selection()
+                if selected:
+                    item = tree.item(selected[0])
+                    values = item['values']
+                    messagebox.showinfo("记录详情",
+                                      f"日期: {values[0]}\n用户: {values[1]}\n类型: {values[2]}\n"
+                                      f"时长: {values[3]}小时\n请假: {values[4]} ({values[5]})\n"
+                                      f"工资: {values[7]}\n时间: {values[6]}")
+
+            def delete_record():
+                selected = tree.selection()
+                if selected and messagebox.askyesno("确认", "确定要删除这条记录吗？"):
+                    item = tree.item(selected[0])
+                    values = item['values']
+                    # 调用删除逻辑（需要在data_manager中添加）
+                    tree.delete(selected[0])
+                    messagebox.showinfo("成功", "记录已删除")
+
+            tree.bind('<Button-3>', popup_menu)
+            tree.bind('<Double-1>', lambda e: show_detail())
+
+            # 初始加载
             load_data()
+
         except Exception as e:
             messagebox.showerror("错误", f"打开记录窗口失败: {str(e)}")
+
+    def open_filter_dialog(self):
+        """打开筛选对话框"""
+        try:
+            from tkinter import simpledialog
+
+            user = simpledialog.askstring("筛选", "输入用户名称（留空不过滤）:")
+            if user is None:
+                return
+
+            date_start = simpledialog.askstring("筛选", "开始日期 YYYY-MM-DD（留空不过滤）:")
+            if date_start is None:
+                return
+
+            date_end = simpledialog.askstring("筛选", "结束日期 YYYY-MM-DD（留空不过滤）:")
+            if date_end is None:
+                return
+
+            # 应用筛选
+            self.current_filter = {}
+            if user and user.strip():
+                self.current_filter['user'] = user.strip()
+            if date_start and validate_date(date_start):
+                self.current_filter['date_start'] = date_start
+            if date_end and validate_date(date_end):
+                self.current_filter['date_end'] = date_end
+
+            # 重新打开记录窗口
+            self.view_all_records()
+
+        except Exception as e:
+            messagebox.showerror("错误", f"筛选出错: {str(e)}")
 
     def prev_page(self):
         if self.current_page > 1:

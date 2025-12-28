@@ -1,4 +1,5 @@
-# core/data_manager.py
+# core/data_manager.py - 完整的 DataManager 类
+
 import os
 import csv
 import shutil
@@ -58,6 +59,11 @@ class DataManager:
         except Exception as e:
             print(f"✗ 读取记录失败: {e}")
             return []
+
+    def get_all_records_with_total(self) -> Tuple[List[List[str]], int]:
+        """获取所有记录和总数"""
+        records = self.get_all_records()
+        return records, len(records)
 
     def get_monthly_records(self, month: str) -> List[List[str]]:
         """获取某月记录"""
