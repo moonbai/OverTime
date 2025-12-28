@@ -294,7 +294,7 @@ class MainWindow:
             years = self.modules['holiday'].get_supported_years()
             self.holiday_info.config(text=f"✓ 已集成 workalendar | 支持年份: {', '.join(years)}", fg="#4CAF50")
         else:
-            self.holiday_info.config(text="⚠️未安装 workalendar | 使用内置2024/2026年数据 | 可在设置中安装", fg="#F44336")
+            self.holiday_info.config(text="⚠️未安装 workalendar | 使用内置2024-2026年数据 | 可在设置中安装", fg="#F44336")
 
     def toggle_leave_options(self):
         """切换请假选项"""
