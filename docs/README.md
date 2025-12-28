@@ -1,8 +1,6 @@
 
 # 加班管理系统 - 使用说明
-```markdown
-  **🤖 本项目利用由 Xiaomi MiMo大模型辅助开发 **
-```
+
 ## 📦项目结构
 ```markdown
 Overtime/
