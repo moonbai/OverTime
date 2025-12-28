@@ -41,8 +41,8 @@ if __name__ == "__main__":
 
         root = tk.Tk()
         root.title("加班管理系统")
-        root.geometry("850x800")
-
+        root.geometry("800x650")  # 修改：宽度800，高度650（原来是900x700+）
+        root.minsize(750, 600)  # 最小尺寸限制
         system = OvertimeSystem(root)
         root.mainloop()
 

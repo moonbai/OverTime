@@ -13,7 +13,7 @@ class SettingsDialog:
 
         self.dialog = tk.Toplevel(parent)
         self.dialog.title("系统设置")
-        self.dialog.geometry("650x650")
+        self.dialog.geometry("650x550")
         self.dialog.transient(parent)
         self.dialog.grab_set()
 
