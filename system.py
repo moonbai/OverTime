@@ -33,7 +33,7 @@ class OvertimeSystem:
     def init_system(self):
         """初始化系统和所有模块"""
         print("="*60)
-        print("加班管理系统 - 模块化架构")
+        print("加班管理系统")
         print("="*60)
 
         # 1. 核心组件
@@ -143,7 +143,7 @@ class OvertimeSystem:
                         '请假时长': data.get('leave_hours', '无'),
                         '提交时间': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         '工资': salary,
-                        '提交方式': data.get('submit_method', '网页提报方式')
+                        '提交方式': data.get('submit_method', '网页填报')
                     }
                     self.modules['webhook'].send(webhook_data)
 

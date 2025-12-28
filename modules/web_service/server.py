@@ -71,3 +71,30 @@ class WebServiceModule:
             return {'running': True, 'url': url, 'port': port}
         else:
             return {'running': False, 'url': '', 'port': self.config_manager.get('web_port', 8080)}
+# 在启动服务器时返回完整URL
+
+def start_server(self):
+    """启动Web服务"""
+    try:
+        from core.utils import get_local_ip
+
+        self.httpd = ThreadedHTTPServer(("", self.port), self.handler)
+
+        # 获取本机IP
+        ip = get_local_ip()
+        if ip == "localhost":
+            url = f"http://localhost:{self.port}"
+        else:
+            url = f"http://{ip}:{self.port}"
+
+        print(f"✓ Web服务已启动: {url}")
+
+        # 在单独线程中运行
+        self.server_thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
+        self.server_thread.start()
+
+        return True, url
+
+    except Exception as e:
+        print(f"✗ Web服务启动失败: {e}")
+        return False, ""

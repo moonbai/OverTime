@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-环境检测工具
+环境检测工具 - 增强版
 功能：检查系统环境、依赖、数据文件等
+支持：多平台Webhook依赖检测
 """
 
 import sys
@@ -45,6 +46,17 @@ def check_config():
         return True, "存在"
     return False, "不存在"
 
+def check_webhook():
+    """检查Webhook相关依赖"""
+    try:
+        import requests
+        requests_available = True
+    except ImportError:
+        requests_available = False
+
+    extra_libs = []
+    return requests_available, extra_libs
+
 def main():
     print("="*60)
     print("加班管理系统 - 环境检测工具")
@@ -63,20 +75,43 @@ def main():
         return
 
     # 依赖检查
-    print(f"\n依赖检查：")
-    deps = [
+    print(f"\n核心依赖：")
+    core_deps = [
         ("tkcalendar", "tkcalendar", "必需"),
-        ("workalendar", "workalendar", "推荐"),
-        ("openpyxl", "openpyxl", "可选")
+        ("requests", "requests", "必需（Web服务/Webhook）")
     ]
 
-    all_installed = True
-    for pkg, import_name, level in deps:
+    all_core_ok = True
+    for pkg, import_name, level in core_deps:
         installed, msg = check_dependency(pkg, import_name)
         status = "✅" if installed else "❌"
         print(f"  {pkg:15} {msg:10} {level:6} {status}")
-        if not installed and level == "必需":
-            all_installed = False
+        if not installed:
+            all_core_ok = False
+
+    # 可选依赖
+    print(f"\n可选依赖（增强功能）：")
+    optional_deps = [
+        ("workalendar", "workalendar", "节假日判断"),
+        ("openpyxl", "openpyxl", "Excel导出")
+    ]
+
+    for pkg, import_name, level in optional_deps:
+        installed, msg = check_dependency(pkg, import_name)
+        status = "✅" if installed else "⚠️"
+        print(f"  {pkg:15} {msg:10} {level:12} {status}")
+
+    # Webhook支持检测
+    print(f"\nWebhook支持：")
+    requests_ok, extra_libs = check_webhook()
+    if requests_ok:
+        print(f"  requests: ✅ 已安装（支持所有平台）")
+        print(f"  支持平台: 飞书/钉钉/企业微信/Lark/Slack/自定义")
+    else:
+        print(f"  requests: ❌ 未安装（无法使用Webhook）")
+
+    if extra_libs:
+        print(f"  额外库: {', '.join(extra_libs)}")
 
     # 文件检查
     print(f"\n文件检查：")
@@ -88,12 +123,14 @@ def main():
 
     # 总结
     print("\n" + "="*60)
-    if all_installed and config_ok and data_ok:
+    if all_core_ok and requests_ok and config_ok and data_ok:
         print("✅ 环境检查通过，可以正常运行！")
     else:
         print("❌ 环境存在问题：")
-        if not all_installed:
+        if not all_core_ok:
             print("  - 缺少必需依赖，请运行: python scripts/install_deps.py")
+        if not requests_ok:
+            print("  - 缺少requests库，Webhook功能无法使用")
         if not config_ok:
             print("  - 缺少配置文件，首次运行会自动生成")
         if not data_ok:

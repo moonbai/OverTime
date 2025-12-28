@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-依赖安装脚本
+依赖安装脚本 - 增强版
 功能：一键安装所有可选依赖
+支持：多平台Webhook依赖
 """
 
 import subprocess
@@ -42,6 +43,7 @@ def main():
 
     packages = [
         ("tkcalendar", "日历选择器（必需）"),
+        ("requests", "HTTP请求库（必需，支持Webhook）"),
         ("workalendar", "节假日判断（推荐）"),
         ("openpyxl", "Excel导出（可选）")
     ]
@@ -49,30 +51,64 @@ def main():
     print("\n当前环境检测：")
     for pkg, desc in packages:
         status = "✅ 已安装" if check_installed(pkg.replace("-", "_")) else "❌ 未安装"
-        print(f"  {pkg:15} - {status}")
+        print(f"  {pkg:15} - {status} - {desc}")
 
     print("\n请选择操作：")
-    print("1. 安装所有依赖")
-    print("2. 仅安装必需依赖 (tkcalendar)")
-    print("3. 退出")
+    print("1. 安装所有依赖（推荐）")
+    print("2. 仅安装必需依赖 (tkcalendar + requests)")
+    print("3. 自定义安装")
+    print("4. 退出")
 
-    choice = input("\n请输入选项 (1/2/3): ").strip()
+    choice = input("\n请输入选项 (1/2/3/4): ").strip()
 
     if choice == "1":
         for pkg, desc in packages:
             if not check_installed(pkg.replace("-", "_")):
                 install_package(pkg, desc)
+            else:
+                print(f"✅ {pkg} 已安装，跳过")
+
     elif choice == "2":
-        if not check_installed("tkcalendar"):
-            install_package("tkcalendar", "日历选择器")
-        2else:
-            print("✅ tkcalendar 已安装")
+        for pkg, desc in packages[:2]:  # 前两个是必需的
+            if not check_installed(pkg.replace("-", "_")):
+                install_package(pkg, desc)
+            else:
+                print(f"✅ {pkg} 已安装，跳过")
+
     elif choice == "3":
+        print("\n可选包：")
+        for i, (pkg, desc) in enumerate(packages[2:], 1):
+            print(f"  {i}. {pkg} - {desc}")
+
+        selections = input("\n请输入要安装的编号（多个用逗号分隔，如 1,2）: ").strip()
+        if selections:
+            try:
+                indices = [int(x.strip()) - 1 for x in selections.split(",")]
+                for idx in indices:
+                    if 0 <= idx < len(packages):
+                        pkg, desc = packages[idx]
+                        if not check_installed(pkg.replace("-", "_")):
+                            install_package(pkg, desc)
+                        else:
+                            print(f"✅ {pkg} 已安装，跳过")
+            except:
+                print("❌ 无效的输入")
+
+    elif choice == "4":
         print("👋 退出安装程序")
+        return
+
+    else:
+        print("❌ 无效选项")
         return
 
     print("\n" + "="*60)
     print("✅ 安装完成！")
+    print("\n重要说明：")
+    print("  - tkcalendar: 必需，提供日历选择器")
+    print("  - requests: 必需，支持Web服务和Webhook")
+    print("  - workalendar:推荐，增强节假日判断")
+    print("  - openpyxl: 可选，支持Excel导出")
     print("="*60)
 
 if __name__ == "__main__":

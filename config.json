@@ -23,7 +23,8 @@
   },
   "webhook": {
     "enabled": true,
-    "url": "https://open.feishu.cn/open-apis/bot/v2/hook/53d87f02-d289-4161-9074-462595a4c34f",
+    "url": "https://oapi.dingtalk.com/robot/send?access_token=5cc41a707cce53f910c1dd87b66c437d9875d63c517919ddb102d81f8d5ebb57",
+    "platform": "dingtalk",
     "headers": "{}",
     "timeout": 10,
     "retry": 3,

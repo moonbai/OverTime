@@ -13,7 +13,7 @@ class SettingsDialog:
 
         self.dialog = tk.Toplevel(parent)
         self.dialog.title("系统设置")
-        self.dialog.geometry("600x600")
+        self.dialog.geometry("650x650")
         self.dialog.transient(parent)
         self.dialog.grab_set()
 
@@ -168,20 +168,46 @@ class SettingsDialog:
     def create_web_settings(self):
         frame = self.web_frame
 
+        # Web服务配置
         tk.Label(frame, text="Web服务端口:", font=("Arial", 9, "bold")).grid(row=0, column=0, sticky='w', padx=10, pady=5)
         self.web_port = tk.Entry(frame, width=25)
         self.web_port.grid(row=0, column=1, sticky='ew', padx=10, pady=5)
 
-        tk.Label(frame, text="Webhook URL:", font=("Arial", 9, "bold")).grid(row=1, column=0, sticky='w', padx=10, pady=5)
+        # Webhook平台选择
+        tk.Label(frame, text="Webhook平台:", font=("Arial", 9, "bold")).grid(row=1, column=0, sticky='w', padx=10, pady=5)
+
+        # 获取平台列表
+        from modules.webhook import WebhookModule
+        wb = WebhookModule(self.config_manager)
+        platforms = wb.get_supported_platforms()
+        platform_names = [f"{name} - {desc}" for _, name, desc in platforms]
+
+        self.webhook_platform = ttk.Combobox(frame, values=platform_names,
+                                            width=28, state="readonly")
+        self.webhook_platform.grid(row=1, column=1, sticky='ew', padx=10, pady=5)
+        self.webhook_platform.bind("<<ComboboxSelected>>", self.on_platform_change)
+
+        # Webhook URL
+        tk.Label(frame, text="Webhook URL:", font=("Arial", 9, "bold")).grid(row=2, column=0, sticky='w', padx=10, pady=5)
         self.webhook_url = tk.Entry(frame, width=40)
-        self.webhook_url.grid(row=1, column=1, sticky='ew', padx=10, pady=5)
+        self.webhook_url.grid(row=2, column=1, sticky='ew', padx=10, pady=5)
 
-        tk.Label(frame, text="Webhook状态:", font=("Arial", 9, "bold")).grid(row=2, column=0, sticky='w', padx=10, pady=5)
+        # URL提示
+        self.url_hint_label = tk.Label(frame, text="", font=("Arial", 8), fg="#666666")
+        self.url_hint_label.grid(row=3, column=0, columnspan=2, sticky='w', padx=10, pady=2)
+
+        # 格式说明
+        self.format_info = tk.Label(frame, text="", font=("Arial", 8, "italic"), fg="#1976D2")
+        self.format_info.grid(row=4, column=0, columnspan=2, sticky='w', padx=10, pady=2)
+
+        # 启用开关
+        tk.Label(frame, text="Webhook状态:", font=("Arial", 9, "bold")).grid(row=5, column=0, sticky='w', padx=10, pady=5)
         self.webhook_enabled = tk.BooleanVar()
-        tk.Checkbutton(frame, text="启用Webhook同步", variable=self.webhook_enabled).grid(row=2, column=1, sticky='w', padx=10, pady=5)
+        tk.Checkbutton(frame, text="启用Webhook同步", variable=self.webhook_enabled).grid(row=5, column=1, sticky='w', padx=10, pady=5)
 
+        # 高级设置
         advanced_frame = tk.LabelFrame(frame, text="高级设置", font=("Arial", 9, "bold"))
-        advanced_frame.grid(row=3, column=0, columnspan=2, sticky='ew', padx=10, pady=10)
+        advanced_frame.grid(row=6, column=0, columnspan=2, sticky='ew', padx=10, pady=10)
 
         tk.Label(advanced_frame, text="超时(秒):").pack(side='left', padx=5)
         self.webhook_timeout = tk.Entry(advanced_frame, width=8)
@@ -195,11 +221,49 @@ class SettingsDialog:
         self.webhook_mode = ttk.Combobox(advanced_frame, values=["sync", "async"], width=8, state="readonly")
         self.webhook_mode.pack(side='left', padx=5)
 
+        # 测试按钮
         tk.Button(frame, text="测试Webhook连接", command=self.test_webhook,
-                 bg="#FF9800", fg="white", width=20).grid(row=4, column=0, columnspan=2, pady=10)
+                 bg="#FF9800", fg="white", width=20).grid(row=7, column=0, columnspan=2, pady=10)
 
-        tk.Label(frame, text="飞书Webhook格式: https://open.feishu.cn/open-apis/bot/v2/hook/xxxx",
-                font=("Arial", 8), fg="#666666").grid(row=5, column=0, columnspan=2, sticky='w', padx=10, pady=5)
+        # 平台对比说明
+        compare_frame = tk.LabelFrame(frame, text="平台对比", font=("Arial", 9, "bold"))
+        compare_frame.grid(row=8, column=0, columnspan=2, sticky='ew', padx=10, pady=5)
+
+        compare_text = """飞书/钉钉/企业微信:适合国内企业，功能丰富
+Slack: 适合国际团队，集成众多应用
+自定义: 适合有特殊需求或自建服务"""
+
+        tk.Label(compare_frame, text=compare_text, font=("Arial", 8), justify='left').pack(anchor='w', padx=5, pady=5)
+
+    def on_platform_change(self, event):
+        """平台选择变化时更新说明"""
+        platform_text = self.webhook_platform.get()
+        # 解析平台key
+        platform_map = {
+            '飞书 (Feishu)': 'feishu',
+            '钉钉 (DingTalk)': 'dingtalk',
+            '企业微信 (WeChat Work)': 'wechat',
+            'Lark (飞书国际版)': 'lark',
+            'Slack': 'slack',
+            '自定义 (Custom)': 'custom'
+        }
+
+        platform_key = platform_map.get(platform_text.split(' - ')[0] if ' - ' in platform_text else platform_text,
+                                        'feishu')
+
+        # 获取配置 - 在这里导入
+        try:
+            from modules.webhook import WebhookModule
+            wb = WebhookModule(self.config_manager)
+
+            # 更新提示
+            hint = wb.get_url_hint(platform_key)
+            self.url_hint_label.config(text=f"URL格式: {hint}")
+
+            format_info = wb.get_format_info(platform_key)
+            self.format_info.config(text=f"数据格式: {format_info}")
+        except Exception as e:
+            print(f"⚠️ 更新平台说明失败: {e}")
 
     def load_config(self):
         # 基础设置
@@ -229,12 +293,59 @@ class SettingsDialog:
 
         # Web服务
         self.web_port.insert(0, str(self.config_manager.get('web_port', 8080)))
+
+        # Webhook配置
         webhook = self.config_manager.get('webhook', {})
         self.webhook_url.insert(0, webhook.get('url', ''))
         self.webhook_enabled.set(webhook.get('enabled', False))
         self.webhook_timeout.insert(0, str(webhook.get('timeout', 10)))
         self.webhook_retry.insert(0, str(webhook.get('retry', 3)))
         self.webhook_mode.set(webhook.get('sync_mode', 'sync'))
+
+        # 平台选择 -延迟处理避免导入错误
+        platform = webhook.get('platform', 'feishu')
+        platform_map = {
+            'feishu': '飞书 (Feishu) - 企业级协作平台',
+            'dingtalk': '钉钉 (DingTalk) - 阿里云办公平台',
+            'wechat': '企业微信 (WeChat Work) - 腾讯企业办公',
+            'lark': 'Lark (飞书国际版) - 字节跳动国际版',
+            'slack': 'Slack - 国际团队协作',
+            'custom': '自定义 (Custom) - 任意Webhook服务'
+        }
+        self.webhook_platform.set(platform_map.get(platform, '飞书 (Feishu) - 企业级协作平台'))
+
+        # 延迟调用，避免导入问题
+        self.dialog.after(100, lambda: self.on_platform_change(None))
+
+    def on_platform_change(self, event):
+        """平台选择变化时更新说明"""
+        try:
+            platform_text = self.webhook_platform.get()
+            # 解析平台key
+            platform_map = {
+                '飞书 (Feishu)': 'feishu',
+                '钉钉 (DingTalk)': 'dingtalk',
+                '企业微信 (WeChat Work)': 'wechat',
+                'Lark (飞书国际版)': 'lark',
+                'Slack': 'slack',
+                '自定义 (Custom)': 'custom'
+            }
+
+            platform_key = platform_map.get(platform_text.split(' - ')[0] if ' - ' in platform_text else platform_text,
+                                            'feishu')
+
+            # 在方法内部导入
+            from modules.webhook import WebhookModule
+            wb = WebhookModule(self.config_manager)
+
+            # 更新提示
+            hint = wb.get_url_hint(platform_key)
+            self.url_hint_label.config(text=f"URL格式: {hint}")
+
+            format_info = wb.get_format_info(platform_key)
+            self.format_info.config(text=f"数据格式: {format_info}")
+        except Exception as e:
+            print(f"⚠️ 更新平台说明失败: {e}")
 
     def toggle_salary_inputs(self):
         enabled = self.salary_enabled.get()
@@ -288,11 +399,22 @@ class SettingsDialog:
             }
             self.config_manager.set('overtime_pay', overtime_pay)
 
-            # Web服务/Webhook
+            # Web服务
             self.config_manager.set('web_port', int(self.web_port.get()))
+
+            # Webhook配置（支持多平台）
+            platform_text = self.webhook_platform.get()
+            platform_map = {
+                '飞书 (Feishu)': 'feishu', '钉钉 (DingTalk)': 'dingtalk',
+                '企业微信 (WeChat Work)': 'wechat', 'Lark (飞书国际版)': 'lark',
+                'Slack': 'slack', '自定义 (Custom)': 'custom'
+            }
+            platform_key = platform_map.get(platform_text.split(' - ')[0] if ' - ' in platform_text else platform_text, 'feishu')
+
             webhook = {
                 'enabled': self.webhook_enabled.get(),
                 'url': self.webhook_url.get().strip(),
+                'platform': platform_key,
                 'headers': self.config_manager.get('webhook.headers', '{}'),
                 'timeout': int(self.webhook_timeout.get()),
                 'retry': int(self.webhook_retry.get()),
@@ -322,6 +444,7 @@ class SettingsDialog:
                 messagebox.showerror("错误", "重置失败")
 
     def test_webhook(self):
+        """测试Webhook连接"""
         if not self.webhook_enabled.get():
             messagebox.showwarning("警告", "请先启用Webhook")
             return
@@ -334,10 +457,21 @@ class SettingsDialog:
         from modules.webhook import WebhookModule
         from core.config import ConfigManager
 
+        # 创建临时配置
         temp_config = self.config_manager.config.copy()
+
+        platform_text = self.webhook_platform.get()
+        platform_map = {
+            '飞书 (Feishu)': 'feishu', '钉钉 (DingTalk)': 'dingtalk',
+            '企业微信 (WeChat Work)': 'wechat', 'Lark (飞书国际版)': 'lark',
+            'Slack': 'slack', '自定义 (Custom)': 'custom'
+        }
+        platform_key = platform_map.get(platform_text.split(' - ')[0] if ' - ' in platform_text else platform_text, 'feishu')
+
         temp_config['webhook'] = {
             'enabled': True,
             'url': url,
+            'platform': platform_key,
             'timeout': int(self.webhook_timeout.get()),
             'retry': int(self.webhook_retry.get()),
             'headers': '{}',
@@ -351,9 +485,12 @@ class SettingsDialog:
         result = webhook_module.test()
 
         if result['status'] == 'success':
-            messagebox.showinfo("测试成功", f"Webhook连接正常！\n状态码: {result.get('code', 'N/A')}")
+            messagebox.showinfo("测试成功",
+                               f"✅ {result['message']}\n\n"
+                               f"平台: {result.get('platform', 'N/A')}\n"
+                               f"状态码: {result.get('code', 'N/A')}")
         else:
-            messagebox.showerror("测试失败", f"连接失败: {result.get('message', '未知错误')}")
+            messagebox.showerror("测试失败", f"❌ {result['message']}")
 
     def install_workalendar(self):
         """安装workalendar"""

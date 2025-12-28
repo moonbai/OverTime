@@ -5,6 +5,7 @@ from typing import Dict, Any
 
 class ConfigManager:
     """统一配置管理器"""
+# core/config.py
 
     DEFAULT_CONFIG = {
         'last_user': '',
@@ -15,15 +16,16 @@ class ConfigManager:
         'deduct_rest_day_hours': True,
         'overtime_pay': {
             'enabled': False,
-            'hourly_wage': 50.0,  # 新增：小时工资
-            'weekday_rate': 1.5,
-            'weekend_rate': 2.0,
-            'holiday_rate': 3.0,
-            'deduct_types': ['事假']  # 新增：扣除工时的请假类型
+            'hourly_wage': 50.0,
+            'weekday_rate': 1.0,
+            'weekend_rate': 1.5,
+            'holiday_rate': 2.0,
+            'deduct_types': ['事假']
         },
         'webhook': {
             'enabled': False,
             'url': '',
+            'platform': 'feishu',  # feishu, dingtalk, wechat, lark, slack, custom
             'headers': '{}',
             'timeout': 10,
             'retry': 3,

@@ -1,5 +1,6 @@
-# 必需依赖
+# 核心依赖（必需）
 tkcalendar>=1.16.0
+requests>=2.25.0
 
 # 推荐依赖（增强功能）
 workalendar>=17.0.0

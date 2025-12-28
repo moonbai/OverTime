@@ -2,7 +2,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
-from core.utils import validate_date, format_timestamp
+from core.utils import validate_date, format_timestamp, get_web_service_url
 
 class MainWindow:
     """主程序界面 - 优化布局"""
@@ -28,8 +28,7 @@ class MainWindow:
         # 延迟初始化
         self.root.after(100, self.update_summary)
         self.root.after(200, self.refresh_records)
-        # 延迟自动检测当天日期（程序启动后800ms）
-        self.root.after(800, self.auto_detect_day_type)
+        self.root.after(300, self._force_set_today)  # 强制设置今天日期
 
     def create_widgets(self):
         """创建界面组件 -标签页布局"""
@@ -126,8 +125,8 @@ class MainWindow:
         self.date_display.pack(side='left', padx=5)
 
         # 日历选择按钮
-        tk.Button(row1, text="📅", command=self.open_calendar, bg="#2196F3", fg="white", width=3).pack(side='left',
-                                                                                                      padx=5)
+        tk.Button(row1, text="📅", command=self.open_calendar,
+                 bg="#2196F3", fg="white", width=3).pack(side='left', padx=5)
 
         # 隐藏的真实日期输入框（用于存储和检测）
         self.date_entry = tk.Entry(row1, width=15)
@@ -160,7 +159,7 @@ class MainWindow:
         self.is_leave = tk.BooleanVar()
         self.is_leave.set(False)
         tk.Checkbutton(row3, text="请假", variable=self.is_leave,
-                       command=self.toggle_leave_options).pack(side='left', padx=(0, 20))
+                      command=self.toggle_leave_options).pack(side='left', padx=(0, 20))
 
         # 动态区域
         self.dynamic_frame = tk.Frame(row3)
@@ -184,27 +183,34 @@ class MainWindow:
         btn_frame = tk.Frame(form_frame)
         btn_frame.pack(fill='x', pady=10)
         tk.Button(btn_frame, text="✅ 提交记录", command=self.submit_record,
-                  bg="#4CAF50", fg="white", width=15, font=("Arial", 9, "bold")).pack(side='left', padx=3)
+                 bg="#4CAF50", fg="white", width=15, font=("Arial", 9, "bold")).pack(side='left', padx=3)
 
-        # 延迟设置默认日期并检测
-        self.root.after(500, self.set_default_date)
+        # 强制设置今天日期（在创建完成后立即执行）
+        self.root.after(100, self._force_set_today)
 
-    def set_default_date(self):
-        """设置默认日期并检测"""
-        today = datetime.now().strftime("%Y-%m-%d")
+    def _force_set_today(self):
+        """强制设置今天日期"""
+        try:
+            if hasattr(self, 'date_display') and hasattr(self, 'date_entry'):
+                today = datetime.now().strftime("%Y-%m-%d")
 
-        # 设置显示框
-        self.date_display.config(state='normal')
-        self.date_display.delete(0, tk.END)
-        self.date_display.insert(0, today)
-        self.date_display.config(state='readonly')
+                # 设置显示框
+                self.date_display.config(state='normal')
+                self.date_display.delete(0, tk.END)
+                self.date_display.insert(0, today)
+                self.date_display.config(state='readonly')
 
-        # 设置隐藏框
-        self.date_entry.delete(0, tk.END)
-        self.date_entry.insert(0, today)
+                # 设置隐藏框
+                self.date_entry.delete(0, tk.END)
+                self.date_entry.insert(0, today)
 
-        # 自动检测
-        self.auto_detect_day_type()
+                # 立即检测
+                if hasattr(self, 'auto_detect_day_type'):
+                    self.auto_detect_day_type()
+
+                print(f"✅ 已自动设置日期: {today}")
+        except Exception as e:
+            print(f"⚠️ 设置日期失败: {e}")
 
     def create_summary_tab(self, parent):
         """汇总统计标签页"""
@@ -391,12 +397,12 @@ class MainWindow:
 
     def auto_detect_day_type(self):
         """自动判断日期类型"""
-        date_str = self.date_entry.get().strip()
-        if not date_str:
-            self.result_label.config(text="等待输入日期...", fg="#666666")
-            return
-
         try:
+            date_str = self.date_entry.get().strip()
+            if not date_str:
+                self.result_label.config(text="等待输入日期...", fg="#666666")
+                return
+
             # 验证日期格式
             datetime.strptime(date_str, "%Y-%m-%d")
 
@@ -674,11 +680,13 @@ class MainWindow:
         """更新Web服务状态"""
         if running:
             self.web_status_label.config(text=f"Web: 运行中", fg="#4CAF50")
-            self.web_url_var.set(url)
+            if hasattr(self, 'web_url_var'):
+                self.web_url_var.set(url)
             self.status_var.set(f"✓ Web服务已启动: {url}")
         else:
             self.web_status_label.config(text="Web: 未启动", fg="#666666")
-            self.web_url_var.set("")
+            if hasattr(self, 'web_url_var'):
+                self.web_url_var.set("")
             self.status_var.set("Web服务已停止")
 
     def on_config_changed(self):
@@ -842,16 +850,3 @@ class MainWindow:
                 messagebox.showerror("失败", f"安装失败:\n{result.stderr}")
         except Exception as e:
             messagebox.showerror("错误", f"安装过程中出错: {str(e)}")
-
-    def update_web_status(self, url, running):
-        """更新Web服务状态"""
-        if running:
-            self.web_status_label.config(text=f"Web: 运行中", fg="#4CAF50")
-            if hasattr(self, 'web_url_var'):
-                self.web_url_var.set(url)
-            self.status_var.set(f"✓ Web服务已启动: {url}")
-        else:
-            self.web_status_label.config(text="Web: 未启动", fg="#666666")
-            if hasattr(self, 'web_url_var'):
-                self.web_url_var.set("")
-            self.status_var.set("Web服务已停止")

@@ -40,8 +40,8 @@ if __name__ == "__main__":
         from system import OvertimeSystem
 
         root = tk.Tk()
-        root.title("加班管理系统 - 模块化架构")
-        root.geometry("850x900")
+        root.title("加班管理系统")
+        root.geometry("850x800")
 
         system = OvertimeSystem(root)
         root.mainloop()

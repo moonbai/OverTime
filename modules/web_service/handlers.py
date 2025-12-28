@@ -88,7 +88,7 @@ class OvertimeWebHandler(http.server.SimpleHTTPRequestHandler):
                     'leave_type': params.get('leave_type', [''])[0],
                     'leave_hours': params.get('leave_hours', [''])[0],
                     'work_hours': params.get('work_hours', [''])[0],
-                    'submit_method': '网页'
+                    'submit_method': '网页提报'
                 }
 
                 if not data['date'] or not data['user'] or not data['day_type']:

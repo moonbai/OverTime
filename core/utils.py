@@ -1,29 +1,39 @@
 # core/utils.py
 import socket
+import re
 from datetime import datetime
 
-def get_local_ip() -> str:
+def validate_date(date_string):
+    """验证日期格式 YYYY-MM-DD"""
+    try:
+        datetime.strptime(date_string, "%Y-%m-%d")
+        return True
+    except ValueError:
+        return False
+
+def format_timestamp():
+    """格式化当前时间"""
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+def get_local_ip():
     """获取本机IP地址"""
     try:
+        # 创建一个UDP socket连接到外部地址（不实际发送）
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]
         s.close()
         return ip
     except:
-        return "127.0.0.1"
+        # 如果失败，返回localhost
+        return "localhost"
 
-def validate_date(date_str: str) -> bool:
-    """验证日期格式"""
-    try:
-        datetime.strptime(date_str, "%Y-%m-%d")
-        return True
-    except ValueError:
-        return False
-
-def format_timestamp() -> str:
-    """获取当前时间戳"""
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+def get_web_service_url(port=8080):
+    """获取Web服务完整URL"""
+    ip = get_local_ip()
+    if ip == "localhost":
+        return f"http://localhost:{port}"
+    return f"http://{ip}:{port}"
 
 def calculate_salary(hours: float, day_type: str, overtime_pay: dict) -> str:
     """计算加班工资"""
