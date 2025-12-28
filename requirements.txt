@@ -1,0 +1,8 @@
+# 必需依赖
+tkcalendar>=1.16.0
+
+# 推荐依赖（增强功能）
+workalendar>=17.0.0
+
+# 可选依赖（Excel导出）
+openpyxl>=3.1.0
