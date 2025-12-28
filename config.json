@@ -1,0 +1,40 @@
+{
+  "last_user": "Mars",
+  "default_hours": "2",
+  "page_size": 10,
+  "web_port": 8080,
+  "leave_types": [
+    "事假",
+    "病假",
+    "年假",
+    "婚假",
+    "产假"
+  ],
+  "deduct_rest_day_hours": true,
+  "overtime_pay": {
+    "enabled": true,
+    "hourly_wage": 28.67,
+    "weekday_rate": 1.5,
+    "weekend_rate": 2.0,
+    "holiday_rate": 3.0,
+    "deduct_types": [
+      "事假"
+    ]
+  },
+  "webhook": {
+    "enabled": true,
+    "url": "https://open.feishu.cn/open-apis/bot/v2/hook/53d87f02-d289-4161-9074-462595a4c34f",
+    "headers": "{}",
+    "timeout": 10,
+    "retry": 3,
+    "sync_mode": "sync"
+  },
+  "modules": {
+    "overtime": true,
+    "salary": true,
+    "leave": true,
+    "webhook": true,
+    "web_service": true,
+    "holiday": true
+  }
+}
