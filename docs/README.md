@@ -526,6 +526,7 @@ python scripts/backup_data.py restore <最新备份文件名>
 2. 网络是否通畅
 3. 使用"测试Webhook连接"功能
 4. 查看重试次数和超时设置
+5. 钉钉添加Webhook机器人时可以设置安全关键词"加班"
 
 ### Q7: 导出Excel失败
 **解决：**
@@ -642,11 +643,4 @@ MIT License
 
 ## 💖致谢
 
-**利用 Xiaomi MiMo 大模型辅助开发**
-
-MiMo 提供了：
-- 界面优化方案
-- 问题排查支持
-
-持续优化中...
-```
+**Xiaomi MiMo 大模型提供相关优化方案及代码建议，感谢Xiaomi**
