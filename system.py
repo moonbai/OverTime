@@ -48,7 +48,7 @@ class OvertimeSystem:
             sys.exit(1)
 
         # 2. 业务模块
-        self.modules['holiday'] = HolidayChecker(use_workalendar=True)
+        self.modules['holiday'] = HolidayChecker()
         self.modules['overtime'] = OvertimeModule(
             self.data_manager,
             self.modules['holiday'],
@@ -97,8 +97,8 @@ class OvertimeSystem:
                 if len(record) >= 8:
                     result.append({
                         '日期': record[0], '用户': record[1], '类型': record[2],
-                        '工作时长': record[3], '请假类型': record[4], '请假时长': record[5],
-                        '提交时间': record[6], '工资': record[7]
+                        '加班时长': record[3], '请假类型': record[4], '请假时长': record[5],
+                        '提交时间': record[6], '加班工资': record[7]
                     })
             return result
 
@@ -117,7 +117,7 @@ class OvertimeSystem:
                     data['leave_type'] = '无'
                     data['leave_hours'] = '无'
 
-                # 计算工资
+                # 计算加班工资
                 salary = "0"
                 if data.get('is_leave'):
                     if self.config_manager.get('deduct_rest_day_hours', True):
@@ -137,12 +137,12 @@ class OvertimeSystem:
                         '类型': '网页填报',
                         '日期': data['date'],
                         '用户': data['user'],
-                        '工作类型': data['day_type'],
-                        '工作时长': data.get('work_hours', '0'),
+                        '加班类型': data['day_type'],
+                        '加班时长': data.get('work_hours', '0'),
                         '请假类型': data.get('leave_type', '无'),
                         '请假时长': data.get('leave_hours', '无'),
                         '提交时间': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        '工资': salary,
+                        '加班工资': salary,
                         '提交方式': data.get('submit_method', '网页填报')
                     }
                     self.modules['webhook'].send(webhook_data)

@@ -92,7 +92,7 @@ def main():
     # 可选依赖
     print(f"\n可选依赖（增强功能）：")
     optional_deps = [
-        ("workalendar", "workalendar", "节假日判断"),
+        ("chinesecalendar", "chinesecalendar", "节假日判断"),
         ("openpyxl", "openpyxl", "Excel导出")
     ]
 

@@ -43,7 +43,7 @@ class SettingsDialog:
         notebook.add(self.leave_frame, text="请假配置")
         self.create_leave_settings()
 
-        # 加班工资
+        # 加班加班工资
         self.salary_frame = ttk.Frame(notebook)
         notebook.add(self.salary_frame, text="加班工资")
         self.create_salary_settings()
@@ -86,12 +86,12 @@ class SettingsDialog:
         install_frame.grid(row=3, column=0, columnspan=2, sticky='w', padx=10, pady=10)
 
         tk.Label(install_frame, text="扩展功能:", font=("Arial", 9, "bold")).pack(side='left', padx=(0, 10))
-        tk.Button(install_frame, text="安装 workalendar", command=self.install_workalendar,
-                 bg="#FF9800", fg="white", width=15).pack(side='left', padx=5)
+        tk.Button(install_frame, text="安装 chinesecalendar", command=self.install_chinesecalendar,
+                 bg="#FF9800", fg="white", width=20).pack(side='left', padx=5)
         tk.Button(install_frame, text="安装 openpyxl", command=self.install_openpyxl,
                  bg="#FF9800", fg="white", width=15).pack(side='left', padx=5)
 
-        tk.Label(frame, text="说明：workalendar增强节假日判断，openpyxl支持Excel导出",
+        tk.Label(frame, text="说明：chinesecalendar增强节假日判断，openpyxl支持Excel导出",
                 font=("Arial", 8), fg="#666666").grid(row=4, column=0, columnspan=2, sticky='w', padx=10, pady=5)
 
     def create_leave_settings(self):
@@ -135,10 +135,10 @@ class SettingsDialog:
         tk.Checkbutton(base_frame, text="启用", variable=self.salary_enabled,
                       command=self.toggle_salary_inputs).pack(side='left')
 
-        # 小时工资
+        # 小时加班工资
         wage_frame = tk.Frame(frame)
         wage_frame.pack(fill='x', padx=10, pady=10)
-        tk.Label(wage_frame, text="小时工资:", font=("Arial", 9, "bold")).pack(side='left', padx=(0, 10))
+        tk.Label(wage_frame, text="小时加班工资:", font=("Arial", 9, "bold")).pack(side='left', padx=(0, 10))
         self.hourly_wage = tk.Entry(wage_frame, width=10)
         self.hourly_wage.pack(side='left')
         tk.Label(wage_frame, text="元/小时", font=("Arial", 9)).pack(side='left', padx=5)
@@ -159,10 +159,10 @@ class SettingsDialog:
         self.salary_holiday = tk.Entry(rate_frame, width=8)
         self.salary_holiday.pack(side='left', padx=5)
 
-        tk.Label(frame, text="计算公式：工资 = 小时工资 × 时长 × 倍率",
+        tk.Label(frame, text="计算公式：加班工资 = 小时加班工资 × 时长 × 倍率",
                 font=("Arial", 8), fg="#666666").pack(anchor='w', padx=10, pady=10)
 
-        tk.Label(frame, text="示例：小时工资50元，工作日加班8小时 = 50×8×1.0 = 400元",
+        tk.Label(frame, text="示例：小时加班工资50元，工作日加班8小时 = 50×8×1.0 = 400元",
                 font=("Arial", 8), fg="#666666").pack(anchor='w', padx=10, pady=0)
 
     def create_web_settings(self):
@@ -282,7 +282,7 @@ Slack: 适合国际团队，集成众多应用
             if leave_type in self.deduct_vars:
                 self.deduct_vars[leave_type].set(leave_type in deduct_types)
 
-        # 加班工资
+        # 加班加班工资
         overtime_pay = self.config_manager.get('overtime_pay', {})
         self.salary_enabled.set(overtime_pay.get('enabled', False))
         self.hourly_wage.insert(0, str(overtime_pay.get('hourly_wage', 50.0)))
@@ -492,14 +492,14 @@ Slack: 适合国际团队，集成众多应用
         else:
             messagebox.showerror("测试失败", f"❌ {result['message']}")
 
-    def install_workalendar(self):
-        """安装workalendar"""
+    def install_chinesecalendar(self):
+        """安装chinesecalendar"""
         try:
             import subprocess
-            result = subprocess.run([sys.executable, "-m", "pip", "install", "workalendar"],
+            result = subprocess.run([sys.executable, "-m", "pip", "install", "chinesecalendar"],
                                   capture_output=True, text=True)
             if result.returncode == 0:
-                messagebox.showinfo("成功", "workalendar安装成功！\n\n请重启程序")
+                messagebox.showinfo("成功", "chinesecalendar安装成功！\n\n请重启程序")
             else:
                 messagebox.showerror("失败", f"安装失败:\n{result.stderr}")
         except Exception as e:

@@ -30,7 +30,7 @@ class DataManager:
             # 创建文件并写入表头
             with open(self.overtime_file, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
-                writer.writerow(["日期", "用户", "类型", "工作时长", "请假类型", "请假时长", "提交时间", "工资"])
+                writer.writerow(["日期", "用户", "类型", "加班时长", "请假类型", "请假时长", "提交时间", "加班工资"])
             print(f"✓ 创建数据文件: {self.overtime_file}")
         else:
             print(f"ℹ CSV文件已存在: {self.overtime_file}")
@@ -155,7 +155,7 @@ class DataManager:
             ws.title = "加班记录"
 
             # 表头
-            headers = ["日期", "用户", "类型", "工作时长", "请假类型", "请假时长", "提交时间", "工资"]
+            headers = ["日期", "用户", "类型", "加班时长", "请假类型", "请假时长", "提交时间", "加班工资"]
             for col, header in enumerate(headers, 1):
                 cell = ws.cell(row=1, column=col, value=header)
                 cell.font = Font(bold=True)

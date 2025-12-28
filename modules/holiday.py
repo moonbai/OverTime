@@ -2,26 +2,24 @@
 from datetime import datetime
 
 class HolidayChecker:
-    """节假日检查器"""
-    def __init__(self, use_workalendar=True):
-        self.workalendar_available = False
+    """节假日检查器 - 使用 chinese_calendar"""
+
+    def __init__(self):
+        self.calendar_available = False
         self.holidays = {}
 
-        # 尝试导入workalendar
-        if use_workalendar:
-            try:
-                from workalendar.china import China
-                self.workalendar_available = True
-                self.china_calendar = China()
-                print("✓ workalendar 已集成")
-            except ImportError:
-                self.workalendar_available = False
-                print("⚠ workalendar 未安装，使用内置数据")
+        # 检测 chinese_calendar
+        try:
+            import chinese_calendar
+            self.calendar_available = True
+            print("✓ chinese_calendar 已集成（支持2004-2026年）")
+        except ImportError:
+            print("⚠ chinese_calendar 未安装，使用内置数据")
+            self.calendar_available = False
 
-        # 内置节假日数据（2024、2025、2026年）
+        # 内置节假日数据（作为备用）
         self.holidays = {
             "2024": {
-                # 节假日
                 "01-01": ("节假日", "元旦"),
                 "02-10": ("节假日", "春节"),
                 "02-11": ("节假日", "春节"),
@@ -33,7 +31,6 @@ class HolidayChecker:
                 "10-01": ("节假日", "国庆节"),
                 "10-02": ("节假日", "国庆节"),
                 "10-03": ("节假日", "国庆节"),
-                # 调休日
                 "01-04": ("调休日", "元旦调休"),
                 "02-04": ("调休日", "春节调休"),
                 "02-18": ("调休日", "春节调休"),
@@ -44,7 +41,6 @@ class HolidayChecker:
                 "10-07": ("调休日", "国庆调休"),
             },
             "2025": {
-                # 节假日
                 "01-01": ("节假日", "元旦"),
                 "01-28": ("节假日", "春节"),
                 "01-29": ("节假日", "春节"),
@@ -67,7 +63,6 @@ class HolidayChecker:
                 "10-07": ("节假日", "国庆节"),
                 "10-08": ("节假日", "国庆节"),
                 "10-29": ("节假日", "重阳节"),
-                # 调休日
                 "01-26": ("调休日", "春节调休"),
                 "02-08": ("调休日", "春节调休"),
                 "04-07": ("调休日", "清明调休"),
@@ -78,7 +73,6 @@ class HolidayChecker:
                 "10-10": ("调休日", "国庆调休"),
             },
             "2026": {
-                # 节假日
                 "01-01": ("节假日", "元旦"),
                 "02-17": ("节假日", "春节"),
                 "02-18": ("节假日", "春节"),
@@ -89,7 +83,6 @@ class HolidayChecker:
                 "10-01": ("节假日", "国庆节"),
                 "10-02": ("节假日", "国庆节"),
                 "10-03": ("节假日", "国庆节"),
-                # 调休日
                 "01-04": ("调休日", "元旦调休"),
                 "02-15": ("调休日", "春节调休"),
                 "02-22": ("调休日", "春节调休"),
@@ -99,41 +92,56 @@ class HolidayChecker:
             }
         }
 
+    # modules/holiday.py - get_day_type 方法
+
     def get_day_type(self, date_str: str) -> tuple:
         """获取日期类型：(类型, 原因)"""
         try:
-            # 1. 优先使用workalendar
-            if self.workalendar_available and hasattr(self, 'china_calendar'):
+            # 1. 优先使用 chinese_calendar
+            if self.calendar_available:
                 try:
-                    year = int(date_str.split('-')[0])
+                    import chinese_calendar as calendar
+                    date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
 
-                    # 检查是否是节假日
-                    if self.china_calendar.is_holiday(date_str):
-                        # 获取节日名称
-                        holidays = self.china_calendar.holidays(year)
-                        for h_date, h_name in holidays:
-                            if str(h_date) == date_str:
-                                return ("节假日", h_name)
-                        return ("节假日", "节假日")
+                    # 获取详细信息
+                    is_holiday, holiday_name = calendar.get_holiday_detail(date_obj)
+                    is_in_lieu = calendar.is_in_lieu(date_obj)
+                    is_workday = calendar.is_workday(date_obj)
 
-                    # 检查是否是工作日
-                    if self.china_calendar.is_working_day(date_str):
-                        # 检查是否是调休日（周六日上班）
-                        month_day = date_str[5:]
-                        if year == 2024 and month_day in self.holidays["2024"]:
-                            h_type, h_name = self.holidays["2024"][month_day]
-                            if h_type == "调休日":
-                                return ("调休日", h_name)
-                        return ("工作日", "工作日")
+                    # 处理 holiday_name
+                    if holiday_name:
+                        name = holiday_name.value if hasattr(holiday_name, 'value') else str(holiday_name)
                     else:
+                        name = "节假日"
+
+                    # 🆕修正的判断逻辑
+                    is_weekend = self._is_weekend(date_str)
+
+                    # 情况1: 周末 + 是工作日 = 调休日
+                    if is_weekend and is_workday:
+                        return ("调休日", name)
+
+                    # 情况2: 周末 + 不是工作日 = 休息日
+                    if is_weekend and not is_workday:
                         return ("休息日", "周末")
 
-                except Exception as e:
-                    print(f"workalendar调用失败: {e},切换到手动模式")
+                    # 情况3: 法定节假日
+                    if is_holiday:
+                        return ("节假日", name)
 
-            # 2. 使用内置数据
+                    # 情况4: 工作日
+                    if is_workday:
+                        return ("工作日", "工作日")
+
+                    # 情况5: 其他情况
+                    return ("休息日", "休息日")
+
+                except Exception as e:
+                    print(f"chinese_calendar调用失败: {e}")
+
+            # 2. 使用内置数据备用
             year = date_str.split('-')[0]
-            month_day = date_str[5:]  # MM-DD
+            month_day = date_str[5:]
 
             if year in self.holidays and month_day in self.holidays[year]:
                 return self.holidays[year][month_day]
@@ -151,9 +159,20 @@ class HolidayChecker:
             print(f"⚠判断日期类型失败: {e}")
             return ("未知", "判断失败")
 
+    def _is_weekend(self, date_str: str) -> bool:
+        """判断是否是周末"""
+        try:
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+            return date_obj.weekday() >= 5  # 5=周六, 6=周日
+        except:
+            return False
+
     def get_supported_years(self) -> list:
         """获取支持的年份"""
-        if self.workalendar_available:
-            return ["2024", "2025", "2026", "2027", "2028", "2029", "2030"]
+        if self.calendar_available:
+            return ["2004", "2005", "2006", "2007", "2008", "2009", "2010",
+                    "2011", "2012", "2013", "2014", "2015", "2016", "2017",
+                    "2018", "2019", "2020", "2021", "2022", "2023", "2024",
+                    "2025", "2026"]
         else:
-            return ["2024", "2025", "2026"]  # 内置数据支持2024-2026
+            return ["2024", "2025", "2026"]

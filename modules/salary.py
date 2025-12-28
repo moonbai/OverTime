@@ -2,7 +2,7 @@
 from typing import Dict, Any
 
 class SalaryModule:
-    """加班薪资计算模块"""
+    """加班工资计算模块"""
 
     def __init__(self, config_manager):
         self.config_manager = config_manager
@@ -18,7 +18,7 @@ class SalaryModule:
             if hours <= 0:
                 return "0"
 
-            # 获取小时工资
+            # 获取小时加班工资
             hourly_wage = overtime_pay.get('hourly_wage', 50.0)
 
             # 获取倍率
@@ -32,14 +32,14 @@ class SalaryModule:
             elif day_type == "调休日":
                 rate = 1.5
 
-            # 计算：小时工资 × 时长 × 倍率
+            # 计算：小时加班工资 × 时长 × 倍率
             salary = hourly_wage * hours * rate
             return f"{salary:.2f}元"
         except:
             return "0"
 
     def calculate_batch(self, records: list) -> tuple:
-        """批量计算工资"""
+        """批量计算加班工资"""
         total_salary = 0
         details = []
 
@@ -59,7 +59,7 @@ class SalaryModule:
             hours_str = record[3]
             leave_type = record[4] if len(record) > 4 else "无"
 
-            # 检查是否需要计算工资
+            # 检查是否需要计算加班工资
             if leave_type != "无":
                 if leave_type not in deduct_types:
                     continue
@@ -92,7 +92,7 @@ class SalaryModule:
         return total_salary, details
 
     def get_summary_text(self, summary: Dict[str, Any]) -> str:
-        """获取工资汇总文本"""
+        """获取加班工资汇总文本"""
         if not self.config_manager.get('overtime_pay.enabled', False):
             return "加班工资计算未启用"
 
@@ -100,8 +100,8 @@ class SalaryModule:
         details = summary.get('details', {})
         hourly_wage = self.config_manager.get('overtime_pay.hourly_wage', 50.0)
 
-        text = f"【{month} 月工资汇总】\n"
-        text += f"小时工资: {hourly_wage}元/小时\n\n"
+        text = f"【{month} 月加班工资汇总】\n"
+        text += f"小时加班工资: {hourly_wage}元/小时\n\n"
 
         total_salary = 0
         for day_type, data in details.items():

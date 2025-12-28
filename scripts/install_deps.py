@@ -44,7 +44,7 @@ def main():
     packages = [
         ("tkcalendar", "日历选择器（必需）"),
         ("requests", "HTTP请求库（必需，支持Webhook）"),
-        ("workalendar", "节假日判断（推荐）"),
+        ("chinesecalendar", "中国节假日判断（推荐）"),
         ("openpyxl", "Excel导出（可选）")
     ]
 
@@ -107,7 +107,7 @@ def main():
     print("\n重要说明：")
     print("  - tkcalendar: 必需，提供日历选择器")
     print("  - requests: 必需，支持Web服务和Webhook")
-    print("  - workalendar:推荐，增强节假日判断")
+    print("  - chinesecalendar:推荐，增强节假日判断")
     print("  - openpyxl: 可选，支持Excel导出")
     print("="*60)
 

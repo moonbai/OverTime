@@ -71,7 +71,7 @@ class OvertimeModule:
         # 构建记录
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # 工资计算
+        # 加班工资计算
         salary = "0"
         if data.get('calculate_salary', False):
             salary = data['salary']

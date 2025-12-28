@@ -15,7 +15,7 @@ Overtime/
 ├── modules/                 # 业务模块
 │   ├── holiday.py           # 节假日判断
 │   ├── overtime.py          # 加班统计
-│   ├── salary.py            # 工资计算
+│   ├── salary.py            # 加班工资计算
 │   ├── leave.py             # 请假管理
 │   ├── webhook.py           # Webhook推送
 │   └── web_service/         # Web服务
@@ -53,7 +53,7 @@ pip install tkcalendar
 **可选依赖（增强功能）：**
 ```bash
 # 节假日判断（推荐）
-pip install workalendar
+pip install chinesecalendar
 
 # Excel导出
 pip install openpyxl
@@ -76,16 +76,15 @@ python main.py
 - `config.json` 配置文件
 
 ### 3. 界面概览
-
+![img.png](程序主页.png)
 #### 顶部工具栏
-- ⚙️ **系统设置**：配置用户、工资、Webhook等
+- ⚙️ **系统设置**：配置用户、加班工资、Webhook等
 - 📂 **导入**：导入CSV/Excel数据
 - 📊 **导出**：导出Excel报表
 - 📋 **全部**：查看所有记录
 - ▶️ **启动** / ⏹️ **停止**：Web服务控制
 
 #### 标签页功能
-
 **📝 数据录入**
 - 用户输入（支持默认用户）
 - 日期选择（日历选择器 + 手动输入）
@@ -99,7 +98,7 @@ python main.py
 **📊 汇总统计**
 - 月度汇总（自动获取当月）
 - 总时长统计
-- 工资汇总（启用工资计算时）
+- 加班工资汇总（启用加班工资计算时）
 - 分类统计：工作日/休息日/节假日/调休时长
 - 刷新按钮
 
@@ -121,12 +120,12 @@ python main.py
 - 3秒后恢复默认颜色
 
 **检测逻辑：**
-1. **workalendar模式**：使用官方节假日数据
-2. **内置模式**：使用2024-2026年完整数据（含调休）
+1. **chinese-calendar模式**：使用第三方库节假日数据
+2. **内置模式**：使用2004-2026年完整数据（含调休）
 3. **基础模式**：根据星期几判断
 
 **支持年份：**
-- workalendar：2024-2030
+- chinese-calendar：2004-2026
 - 内置数据：2024-2026
 
 ### 2. 加班记录
@@ -154,10 +153,10 @@ python main.py
 - 勾选后，该类型请假会记录为"休息日"
 - 例如：事假勾选后，自动扣除工时
 
-### 4. 工资计算
+### 4. 加班工资计算
 
 **配置：**
-- 小时工资：如 50元/小时
+- 小时加班工资：如 50元/小时
 - 倍率配置：
   - 工作日：1.5倍
   - 休息日：2.0倍
@@ -165,7 +164,7 @@ python main.py
 
 **计算公式：**
 ```
-工资 = 小时工资 × 时长 × 倍率
+加班工资 = 小时加班工资 × 时长 × 倍率
 ```
 
 **示例：**
@@ -174,8 +173,8 @@ python main.py
 - 节假日加班8小时：50 × 8 × 3.0 = 1200元
 
 **汇总显示：**
-- 月度总工资
-- 每日工资明细
+- 月度总加班工资
+- 每日加班工资明细
 - 分类统计
 
 ### 5. Web 服务
@@ -194,6 +193,7 @@ python main.py
 - 本机：`http://localhost:8080`
 - 局域网：`http://本机IP:8080`
 - 查看IP：启动后会显示在底部状态栏
+![img.png](网页主页.png)
 
 **Webhook推送：**
 - 支持飞书、钉钉、企业微信
@@ -236,7 +236,7 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 - **默认用户**：每次打开自动填充
 - **默认加班时长**：如8 小时
 - **每页记录数**：分页显示数量
-- **一键安装**：workalendar / openpyxl
+- **一键安装**：chinesecalendar / openpyxl
 
 ### 请假配置
 - **请假类型**：可自定义增删
@@ -244,8 +244,8 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 - **说明**：事假通常需要扣除
 
 ### 加班工资
-- **启用开关**：开启/关闭工资计算
-- **小时工资**：如 50.0 元/小时
+- **启用开关**：开启/关闭加班工资计算
+- **小时加班工资**：如 50.0 元/小时
 - **倍率配置**：
   - 工作日倍率：1.5
   - 休息日倍率：2.0
@@ -266,14 +266,14 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 ```
 用户输入 → 界面验证 → 业务处理 → 数据存储 → Webhook通知
    ↓        ↓         ↓        ↓         ↓
-表单数据   格式检查   工资计算   CSV文件    飞书/钉钉
+表单数据   格式检查   加班工资计算   CSV文件    飞书/钉钉
 ```
 
 **详细步骤：**
 1. **输入阶段**：用户填写表单
 2. **验证阶段**：检查必填项、日期格式
 3. **检测阶段**：自动判断日期类型
-4. **计算阶段**：根据配置计算工资
+4. **计算阶段**：根据配置计算加班工资
 5. **提交阶段**：保存到CSV文件
 6. **同步阶段**：异步发送Webhook（如果启用）
 
@@ -328,8 +328,8 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 | `web_port` | Web服务端口 | 8080   |
 | `leave_types` | 请假类型列表 | 5种     |
 | `deduct_rest_day_hours` | 是否扣除休息日工时 | true   |
-| `overtime_pay.enabled` | 是否启用工资计算 | false  |
-| `overtime_pay.hourly_wage` | 小时工资（元） | 50.0   |
+| `overtime_pay.enabled` | 是否启用加班工资计算 | false  |
+| `overtime_pay.hourly_wage` | 小时加班工资（元） | 50.0   |
 | `overtime_pay.weekday_rate` | 工作日倍率 | 1.5    |
 | `overtime_pay.weekend_rate` | 休息日倍率 | 2.0    |
 | `overtime_pay.holiday_rate` | 节假日倍率 | 3.0    |
@@ -353,7 +353,7 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 4. 系统自动检测：`✓工作日 (工作日)`
 5. 填写加班时长：8
 6. 点击"提交记录"
-7. 成功提示：工资（如果启用）
+7. 成功提示：加班工资（如果启用）
 
 **数据查看：**
 - 切换到"汇总统计"标签页
@@ -397,7 +397,7 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 
 **管理员配置：**
 1. 设置Webhook URL（飞书/钉钉机器人）
-2. 配置小时工资和倍率
+2. 配置小时加班工资和倍率
 3. 告知团队成员网页端地址
 
 **团队成员：**
@@ -445,7 +445,7 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 
 **表头：**
 ```
-日期,用户,类型,工作时长,请假类型,请假时长,提交时间,工资
+日期,用户,类型,加班时长,请假类型,请假时长,提交时间,加班工资
 ```
 
 **示例数据：**
@@ -458,11 +458,11 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 **字段说明：**
 - **日期**：YYYY-MM-DD- **用户**：姓名
 - **类型**：工作日/休息日/节假日/调休日
-- **工作时长**：加班时长（正数）或请假时长（负数）
+- **加班时长**：加班时长（正数）或请假时长（负数）
 - **请假类型**：事假/病假/年假/婚假/产假/无
 - **请假时长**：如 "-8"
 - **提交时间**：YYYY-MM-DD HH:MM:SS
-- **工资**：如 "400.00元"
+- **加班工资**：如 "400.00元"
 
 ---
 
@@ -476,9 +476,9 @@ python scripts/install_deps.py
 ```
 
 ### Q2: 节假日判断不准确
-**原因：** 未安装workalendar或内置数据不全**解决：**
+**原因：** 未安装chinesecalendar或内置数据不全**解决：**
 ```bash
-pip install workalendar
+pip install chinesecalendar
 ```
 或手动在 `modules/holiday.py` 中添加更多节假日数据
 
@@ -507,7 +507,7 @@ python scripts/backup_data.py list
 python scripts/backup_data.py restore <最新备份文件名>
 ```
 
-### Q5: 如何修改工资倍率
+### Q5: 如何修改加班工资倍率
 **方法一：设置界面**
 1. 点击"⚙️ 设置"
 2. 切换到"加班工资"标签
@@ -570,11 +570,11 @@ pip install openpyxl
 - 只填"日期范围"：查看某段时间
 - 组合筛选：精确查找
 
-### 技巧5：工资统计
-- 先在设置中启用工资计算
-- 配置小时工资和倍率
+### 技巧5：加班工资统计
+- 先在设置中启用加班工资计算
+- 配置小时加班工资和倍率
 - 提交记录时自动计算
-- 在汇总页查看总工资
+- 在汇总页查看总加班工资
 
 ---
 

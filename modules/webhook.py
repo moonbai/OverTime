@@ -145,7 +145,7 @@ class WebhookModule:
                 "msgtype": "markdown",
                 "markdown": {
                     "title": "加班记录通知",
-                    "text": self._build_markdown_content(data) + f"\n\n[🔗 **访问Web服务**]({web_url})\n> {ip_port}"
+                    "text": self._build_markdown_content(data) + f"\n\n[🔗 **Web服务** - {ip_port}]({web_url})"
                 }
             }
 
@@ -210,11 +210,11 @@ class WebhookModule:
 ━━━━━━━━━━━━━━━━━━
 日期: {data.get('日期', '')}
 用户: {data.get('用户', '')}
-类型: {data.get('工作类型', '')}
-工作时长: {data.get('工作时长', '')}小时
+加班类型: {data.get('加班类型', '')}
+加班时长: {data.get('加班时长', '')}小时
 请假类型: {data.get('请假类型', '无')}
 请假时长: {data.get('请假时长', '无')}
-工资: {data.get('工资', '0')}
+加班工资: {data.get('加班工资', '0')}
 提交时间: {data.get('提交时间', '')}
 提交方式: {data.get('提交方式', '')}"""
 
@@ -224,30 +224,24 @@ class WebhookModule:
 
 >日期: **{data.get('日期', '')}**
 > 用户: **{data.get('用户', '')}**
-
-**工作信息**
-- 类型: {data.get('工作类型', '')}
-- 时长: {data.get('工作时长', '')}小时
-- 请假: {data.get('请假类型', '无')} ({data.get('请假时长', '无')})
-
-**财务信息**
-- 工资: **{data.get('工资', '0')}**
-
-**提交信息**
-- 时间: {data.get('提交时间', '')}
-- 方式: {data.get('提交方式', '')}"""
+- 加班类型: {data.get('加班类型', '')}
+- 加班时长: {data.get('加班时长', '')}小时
+- 请假类型: {data.get('请假类型', '无')} ({data.get('请假时长', '无')})
+- 加班工资: **{data.get('加班工资', '0')}**
+- 提交时间: {data.get('提交时间', '')}
+- 提交方式: {data.get('提交方式', '')}"""
 
     def _build_slack_content(self, data: Dict[str, Any]) -> str:
         """构建Slack内容"""
         return f"""*📝 加班记录通知*
 • *日期*: {data.get('日期', '')}
 • *用户*: {data.get('用户', '')}
-• *类型*: {data.get('工作类型', '')}
-• *时长*: {data.get('工作时长', '')}小时
-• *请假*: {data.get('请假类型', '无')} ({data.get('请假时长', '无')})
-• *工资*: *{data.get('工资', '0')}*
-• *时间*: {data.get('提交时间', '')}
-• *方式*: {data.get('提交方式', '')}"""
+• *加班类型*: {data.get('加班类型', '')}
+• *加班时长*: {data.get('加班时长', '')}小时
+• *请假类型*: {data.get('请假类型', '无')} ({data.get('请假时长', '无')})
+• *加班工资*: *{data.get('加班工资', '0')}*
+• *提交时间*: {data.get('提交时间', '')}
+• *提交方式*: {data.get('提交方式', '')}"""
 
     def _send_with_retry(self, url: str, payload: Dict[str, Any], timeout: int, retry: int, platform: str) -> bool:
         """带重试的发送"""
@@ -295,13 +289,13 @@ class WebhookModule:
         test_data = {
             '日期': '2024-01-04',
             '用户': '测试用户',
-            '工作类型': '调休日',
-            '工作时长': '8',
+            '加班类型': '调休日',
+            '加班时长': '8',
             '请假类型': '无',
             '请假时长': '无',
-            '工资': '400.00元',
+            '加班工资': '400.00元',
             '提交时间': '2024-12-28 14:30:22',
-            '提交方式': '测试'
+            '提交方式': '测试推送'
         }
 
         payload = self._format_payload(test_data, platform)
@@ -335,7 +329,7 @@ class WebhookModule:
         """获取平台格式说明"""
         format_map = {
             'feishu': 'Interactive卡片 + 按钮(含IP:端口)',
-            'dingtalk': 'Markdown格式 + 链接，因钉钉自定义机器人配置安全设置，请设置 加班 为 关键词',
+            'dingtalk': 'Markdown格式 + 链接，因钉钉自定义机器人配置安全设置，请设置**加班**为关键词',
             'wechat': 'Text文本 + IP:端口',
             'lark': 'Interactive卡片 + 按钮',
             'slack': 'Block JSON + 按钮',
