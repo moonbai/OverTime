@@ -65,7 +65,7 @@ def main():
     elif choice == "2":
         if not check_installed("tkcalendar"):
             install_package("tkcalendar", "日历选择器")
- else:
+        2else:
             print("✅ tkcalendar 已安装")
     elif choice == "3":
         print("👋 退出安装程序")

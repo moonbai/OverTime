@@ -1,10 +1,10 @@
 
-```markdown
 # 加班管理系统 - 使用说明
- **🤖 本项目利用由 Xiaomi MiMo大模型辅助开发**
-```
 ```markdown
+  **🤖 本项目利用由 Xiaomi MiMo大模型辅助开发 **
+```
 ## 📦项目结构
+```markdown
 Overtime/
 ├── scripts/                 # 工具脚本
 │   ├── install_deps.py      # 依赖安装
@@ -79,7 +79,7 @@ python main.py
 
 ### 3. 界面概览
 
-####顶部工具栏
+#### 顶部工具栏
 - ⚙️ **系统设置**：配置用户、工资、Webhook等
 - 📂 **导入**：导入CSV/Excel数据
 - 📊 **导出**：导出Excel报表
@@ -123,7 +123,7 @@ python main.py
 - 3秒后恢复默认颜色
 
 **检测逻辑：**
-1. **workalendar模式**（已安装）：使用官方节假日数据
+1. **workalendar模式**：使用官方节假日数据
 2. **内置模式**：使用2024/2026年完整数据（含调休）
 3. **基础模式**：根据星期几判断
 
@@ -161,9 +161,9 @@ python main.py
 **配置：**
 - 小时工资：如 50元/小时
 - 倍率配置：
-  - 工作日：1.0倍
-  - 休息日：1.5倍
-  - 节假日：2.0倍
+  - 工作日：1.5倍
+  - 休息日：2.0倍
+  - 节假日：3.0倍
 
 **计算公式：**
 ```
@@ -171,9 +171,9 @@ python main.py
 ```
 
 **示例：**
-- 工作日加班8小时：50 × 8 × 1.0 =400元
-- 休息日加班8小时：50 × 8 × 1.5 = 600元
-- 节假日加班8小时：50 × 8 × 2.0 = 800元
+- 工作日加班8小时：50 × 8 × 1.5 =600元
+- 休息日加班8小时：50 × 8 × 2.0 = 800元
+- 节假日加班8小时：50 × 8 × 3.0 = 1200元
 
 **汇总显示：**
 - 月度总工资
@@ -188,13 +188,14 @@ python main.py
 - 默认端口：8080（可在设置中修改）
 
 **网页端功能：**
--独立HTML表单
--日期自动检测
+- 独立HTML表单
+- 日期自动检测
 - 支持加班/请假
-- 实时提交反馈**访问方式：**
--本机：`http://localhost:8080`
+- 实时提交反馈
+- **访问方式：**
+- 本机：`http://localhost:8080`
 - 局域网：`http://本机IP:8080`
-- 查看IP：启动后会显示在状态栏
+- 查看IP：启动后会显示在底部状态栏
 
 **Webhook推送：**
 - 支持飞书、钉钉、企业微信
@@ -248,9 +249,9 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 - **启用开关**：开启/关闭工资计算
 - **小时工资**：如 50.0 元/小时
 - **倍率配置**：
-  - 工作日倍率：1.0
-  - 休息日倍率：1.5
-  - 节假日倍率：2.0
+  - 工作日倍率：1.5
+  - 休息日倍率：2.0
+  - 节假日倍率：3.0
 
 ### Web服务/Webhook
 - **服务端口**：如 8080
@@ -266,8 +267,8 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 
 ```
 用户输入 → 界面验证 → 业务处理 → 数据存储 → Webhook通知
-    ↓         ↓           ↓           ↓           ↓
-表单数据  格式检查    工资计算    CSV文件    飞书/钉钉
+   ↓        ↓         ↓        ↓         ↓
+表单数据   格式检查   工资计算   CSV文件    飞书/钉钉
 ```
 
 **详细步骤：**
@@ -321,24 +322,24 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 
 ### 参数说明
 
-| 参数 | 说明 | 默认值 |
+| 参数 | 说明 | 默认值    |
 |------|------|--------|
-| `last_user` | 默认用户 | "" |
-| `default_hours` | 默认加班时长 | "8" |
-| `page_size` | 每页记录数 | 10 |
-| `web_port` | Web服务端口 | 8080 |
-| `leave_types` | 请假类型列表 | 5种 |
-| `deduct_rest_day_hours` | 是否扣除休息日工时 | true |
-| `overtime_pay.enabled` | 是否启用工资计算 | false |
-| `overtime_pay.hourly_wage` | 小时工资（元） | 50.0 |
-| `overtime_pay.weekday_rate` | 工作日倍率 | 1.0 |
-| `overtime_pay.weekend_rate` | 休息日倍率 | 1.5 |
-| `overtime_pay.holiday_rate` | 节假日倍率 | 2.0 |
+| `last_user` | 默认用户 | ""     |
+| `default_hours` | 默认加班时长 | "8"    |
+| `page_size` | 每页记录数 | 10     |
+| `web_port` | Web服务端口 | 8080   |
+| `leave_types` | 请假类型列表 | 5种     |
+| `deduct_rest_day_hours` | 是否扣除休息日工时 | true   |
+| `overtime_pay.enabled` | 是否启用工资计算 | false  |
+| `overtime_pay.hourly_wage` | 小时工资（元） | 50.0   |
+| `overtime_pay.weekday_rate` | 工作日倍率 | 1.5    |
+| `overtime_pay.weekend_rate` | 休息日倍率 | 2.0    |
+| `overtime_pay.holiday_rate` | 节假日倍率 | 3.0    |
 | `overtime_pay.deduct_types` | 扣除工时的请假类型 | ["事假"] |
-| `webhook.enabled` | 是否启用Webhook | false |
-| `webhook.url` | Webhook地址 | "" |
-| `webhook.timeout` | 超时时间（秒） | 10 |
-| `webhook.retry` | 重试次数 | 3 |
+| `webhook.enabled` | 是否启用Webhook | false  |
+| `webhook.url` | Webhook地址 | ""     |
+| `webhook.timeout` | 超时时间（秒） | 10     |
+| `webhook.retry` | 重试次数 | 3      |
 | `webhook.sync_mode` | 同步模式 | "sync" |
 
 ---
@@ -359,7 +360,9 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 **数据查看：**
 - 切换到"汇总统计"标签页
 - 查看当月统计
-- 点击"刷新"更新### 场景2：请假管理
+- 点击"刷新"
+
+### 场景2：请假管理
 
 **操作步骤：**
 1. 勾选"请假"选项
@@ -380,7 +383,7 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 
 **启动服务：**
 1. 点击"▶️ 启动"按钮
-2. 记录显示的URL（如 `http://192.168.1.100:8080`）
+2. 记录显示的URL（如 `http://192.168.1.1:8080`）
 
 **访问填报：**
 1. 手机/电脑浏览器访问URL
@@ -405,7 +408,7 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 
 **月末统计：**
 1. 管理员打开桌面程序
-2.筛选当月数据
+2. 筛选当月数据
 3. 导出Excel报表
 4. 发送给财务
 
@@ -413,7 +416,7 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 
 ## 🛡️ 数据安全
 
-###本地存储
+### 本地存储
 - 所有数据保存在本地CSV文件
 - 无云端依赖，数据完全私有
 
@@ -438,7 +441,7 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 
 ---
 
-##📝 CSV文件格式
+## 📝 CSV文件格式
 
 **文件路径：** `data/overtime_records.csv`
 
@@ -545,7 +548,7 @@ pip install openpyxl
 
 ---
 
-##💡 使用技巧
+## 💡 使用技巧
 
 ### 技巧1：快速填报
 - 设置默认用户
@@ -583,7 +586,6 @@ pip install openpyxl
 
 ### 功能建议
 - 欢迎提交 Pull Request
-- 联系 Xiaomi MiMo 获取帮助
 
 ### 更新日志
 - 查看项目 commit记录
@@ -591,7 +593,7 @@ pip install openpyxl
 
 ---
 
-##🎓 高级功能
+## 🎓 高级功能
 
 ### 自定义Webhook
 ```json
@@ -639,13 +641,11 @@ MIT License
 
 ---
 
-##💖致谢
+## 💖致谢
 
-**由 Xiaomi MiMo 大模型辅助开发**
+**利用 Xiaomi MiMo 大模型辅助开发**
 
 MiMo 提供了：
-- 架构设计建议
-- 代码实现指导
 - 界面优化方案
 - 问题排查支持
 
