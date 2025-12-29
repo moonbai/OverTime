@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 class HolidayChecker:
-    """节假日检查器 - 支持API格式JSON"""
+    """节假日检查器"""
 
     def __init__(self, config_manager):
         self.config_manager = config_manager
@@ -238,7 +238,7 @@ class HolidayChecker:
             }
 
     def get_day_type(self, date_str: str) -> tuple:
-        """获取日期类型：(类型, 原因) - 按detailsType分类"""
+        """获取日期类型"""
         info = self.get_holiday_info(date_str)
 
         # 按detailsType分类：
@@ -318,7 +318,7 @@ class HolidayChecker:
         return 0
 
     def get_supported_years(self) -> list:
-        """获取支持的年份 - 根据数据源返回"""
+        """获取支持的年份"""
         use_builtin = self.config_manager.get('use_builtin_holiday', False)
 
         if use_builtin:

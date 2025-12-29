@@ -5,7 +5,7 @@ import time
 from typing import Dict, Any, List, Tuple
 
 class WebhookModule:
-    """Webhook推送模块 - 支持多平台"""
+    """Webhook推送模块"""
     def __init__(self, config_manager):
         self.config_manager = config_manager
 

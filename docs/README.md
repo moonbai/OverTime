@@ -121,12 +121,12 @@ python main.py
 
 **检测逻辑：**
 1. **chinese-calendar模式**：使用第三方库节假日数据
-2. **内置模式**：使用2004-2026年完整数据（含调休）
+2. **内置模式**：采用第三方Api获取Json数据，支持2026-2026年完整数据（含调休）
 3. **基础模式**：根据星期几判断
 
 **支持年份：**
 - chinese-calendar：2004-2026
-- 内置数据：2024-2026
+- 内置数据：2025-2026
 
 ### 2. 加班记录
 
@@ -251,9 +251,15 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
   - 休息日倍率：2.0
   - 节假日倍率：3.0
 
+### 节假日数据
+- **数据源选择**：支持内置数据源与Chinese_Calendar数据源切换
+- **获取Json**：跳转至第三方网站通过Api获取全年Json信息
+- **安装依赖**：点击一键安装Chinese_Calendar依赖包
+
 ### Web服务/Webhook
 - **服务端口**：如 8080
-- **Webhook URL**：飞书/钉钉机器人地址
+- **Webhook平台**：支持飞书/钉钉/企业微信/Lark/Slack等国内外多个平台，并且支持自定义Webhook
+- **Webhook URL**：Webhook地址
 - **超时时间**：请求超时秒数
 - **重试次数**：失败重试次数
 - **同步模式**：sync/async
@@ -266,7 +272,7 @@ python scripts/backup_data.py restore overtime_records_20241228_143022.csv
 ```
 用户输入 → 界面验证 → 业务处理 → 数据存储 → Webhook通知
    ↓        ↓         ↓        ↓         ↓
-表单数据   格式检查   加班工资计算   CSV文件    飞书/钉钉
+表单数据   格式检查   加班工资计算   CSV文件    飞书/钉钉/企业微信/Lark/Slack/自定义
 ```
 
 **详细步骤：**

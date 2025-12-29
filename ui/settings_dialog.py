@@ -173,7 +173,7 @@ class SettingsDialog:
                 font=("Arial", 8), fg="#666666").pack(anchor='w', padx=10, pady=0)
 
     def create_holiday_settings(self):
-        """节假日数据源设置 - 精简版"""
+        """节假日数据源设置"""
         frame = self.holiday_frame
 
         # 数据源选择
@@ -189,11 +189,11 @@ class SettingsDialog:
         tk.Radiobutton(source_frame, text="chinese_calendar",
                       variable=self.holiday_source, value="chinese").pack(side='left', padx=5)
 
-        # 操作按钮 - 仅保留获取JSON
+        # 操作按钮
         btn_frame = tk.Frame(frame)
         btn_frame.pack(fill='x', padx=10, pady=10)
 
-        tk.Button(btn_frame, text="获取官方JSON", command=self.get_official_json,
+        tk.Button(btn_frame, text="获取第三方JSON", command=self.get_official_json,
                  bg="#9C27B0", fg="white", width=20).pack(side='left', padx=5)
 
         tk.Button(btn_frame, text="安装 chinese_calendar", command=self.install_chinesecalendar,
@@ -204,7 +204,7 @@ class SettingsDialog:
         self.holiday_status.pack(anchor='w', padx=10, pady=5)
 
         # 说明
-        tk.Label(frame, text="说明：\n• 内置数据: 从官网获取并保存到 modules/holiday.json\n• chinese_calendar: 安装依赖库自动判断",
+        tk.Label(frame, text="说明：\n• 内置数据: 从第三方API获取年度Json信息并保存到 modules/holiday.json文件内\n• chinese_calendar: 安装依赖库自动判断\n\n推荐采用第三方数据源判定更准确，目前依赖库因部分数据确实无法准确区分三倍工资法定节假日及普通节假日",
                 font=("Arial", 8), fg="#666666").pack(anchor='w', padx=10, pady=5)
 
     def create_web_settings(self):
@@ -373,7 +373,7 @@ Slack: 适合国际团队，集成众多应用
             if os.path.exists(json_path):
                 self.holiday_status.config(text="✓ 内置数据已配置 (holiday.json)", fg="#4CAF50")
             else:
-                self.holiday_status.config(text="⚠ holiday.json不存在，请点击获取官方JSON", fg="#F44336")
+                self.holiday_status.config(text="⚠ holiday.json不存在，请点击获取第三方Api信息", fg="#F44336")
         else:
             try:
                 import chinese_calendar
@@ -415,12 +415,12 @@ Slack: 适合国际团队，集成众多应用
             cb.pack(side='left', padx=5, pady=2)
 
     def get_official_json(self):
-        """获取官方JSON数据 - 创建完整文件"""
+        """获取第三方JSON数据"""
         import webbrowser
         from tkinter import simpledialog
 
         # 打开网页
-        if messagebox.askyesno("访问官网", "将打开 https://www.mxnzp.com/doc/detail?id=1\n\n是否继续？"):
+        if messagebox.askyesno("访问网址", "将打开 https://www.mxnzp.com/doc/detail?id=1\n\n是否继续？"):
             try:
                 webbrowser.open("https://www.mxnzp.com/doc/detail?id=1")
             except:
@@ -428,7 +428,7 @@ Slack: 适合国际团队，集成众多应用
 
         # 提示用户粘贴数据
         def import_json():
-            data = simpledialog.askstring("导入JSON", "请粘贴从官网获取的完整JSON数据:")
+            data = simpledialog.askstring("导入JSON", "请粘贴从第三方API获取的完整JSON数据:")
             if data and data.strip():
                 try:
                     # 尝试解析JSON

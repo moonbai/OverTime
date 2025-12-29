@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import List, Tuple, Dict, Any
 
 class DataManager:
-    """数据管理器 - 统一处理所有数据文件"""
+    """数据管理器"""
 
     def __init__(self, data_dir="data"):
         self.data_dir = data_dir

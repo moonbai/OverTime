@@ -149,7 +149,7 @@ class OvertimeSystem:
                 # 提交记录
                 success, message, record = self.modules['overtime'].submit_overtime(data)
 
-                # Webhook同步（网页提交也会触发）
+                # Webhook同步
                 if success and self.config_manager.get('webhook.enabled', False):
                     webhook_data = {
                         '类型': '网页填报',
@@ -200,7 +200,7 @@ class OvertimeSystem:
             messagebox.showerror("停止失败", message)
 
     def show_about(self):
-        """显示关于信息 - 带GitHub链接"""
+        """显示关于信息"""
         def open_github():
             try:
                 webbrowser.open("https://github.com/moonbai/OverTime")

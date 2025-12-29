@@ -5,7 +5,7 @@ from datetime import datetime
 from core.utils import validate_date, format_timestamp, get_web_service_url
 
 class MainWindow:
-    """主程序界面 - 优化布局"""
+    """主程序界面"""
 
     def __init__(self, root, config_manager, data_manager, modules,
                  open_settings_callback, start_web_callback, stop_web_callback):
@@ -31,7 +31,7 @@ class MainWindow:
         self.root.after(300, self._force_set_today)
 
     def create_widgets(self):
-        """创建界面组件 -标签页布局"""
+        """创建界面组件"""
         # 顶部工具栏
         toolbar = tk.Frame(self.root)
         toolbar.pack(fill='x', padx=10, pady=5)
@@ -92,7 +92,7 @@ class MainWindow:
         status_bar.pack(side='bottom', fill='x', padx=10, pady=2)
 
     def create_input_tab(self, parent):
-        """数据录入标签页 - 优化布局"""
+        """数据录入标签页"""
         # 节假日提示
         holiday_frame = tk.LabelFrame(parent, text="节假日判断", font=("Arial", 9, "bold"), padx=5, pady=3)
         holiday_frame.pack(fill='x', pady=(0, 5))
@@ -293,7 +293,7 @@ class MainWindow:
                 if self.modules['holiday'].calendar_available:
                     self.holiday_info.config(text=f"✓ chinese_calendar | 支持年份: {years[0]}-{years[-1]}", fg="#4CAF50")
                 else:
-                    self.holiday_info.config(text=f"⚠️ 未配置数据源 | 支持年份: 2024-2026", fg="#F44336")
+                    self.holiday_info.config(text=f"⚠️ 未配置数据源 | 请手动选择加班类型", fg="#F44336")
 
     def toggle_leave_options(self):
         """切换请假选项"""
@@ -341,7 +341,7 @@ class MainWindow:
             pass
 
     def open_calendar(self):
-        """打开日历选择器 - 优化版"""
+        """打开日历选择器"""
         try:
             from tkcalendar import Calendar
             from datetime import datetime
@@ -425,7 +425,7 @@ class MainWindow:
             messagebox.showerror("错误", f"打开日历失败: {str(e)}")
 
     def update_date_and_detect(self):
-        """更新日期并自动检测（支持手动输入）"""
+        """更新日期并自动检测"""
         date_str = self.date_display.get().strip()
         if date_str:
             self.date_entry.delete(0, tk.END)
@@ -433,7 +433,7 @@ class MainWindow:
             self.auto_detect_day_type()
 
     def auto_detect_day_type(self):
-        """自动判断日期类型 - 显示详细信息"""
+        """自动判断日期类型"""
         try:
             date_str = self.date_entry.get().strip()
             if not date_str:
@@ -848,7 +848,7 @@ class MainWindow:
             messagebox.showerror("错误", f"导出失败: {str(e)}")
 
     def view_all_records(self):
-        """查看所有记录 - 表格形式"""
+        """查看所有记录"""
         try:
             top = tk.Toplevel(self.root)
             top.title("所有记录")

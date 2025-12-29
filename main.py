@@ -20,7 +20,8 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         root = tk.Tk()
         root.withdraw()
         messagebox.showerror("程序崩溃",
-            f"程序遇到严重错误，请截图保存以下信息：\n\n{error_msg[:800]}...")
+            f"程序"
+            f"遇到严重错误，请截图保存以下信息：\n\n{error_msg[:800]}...")
     except:
         pass
 
