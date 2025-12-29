@@ -14,6 +14,7 @@ Overtime/
 │   └── utils.py             # 工具函数
 ├── modules/                 # 业务模块
 │   ├── holiday.py           # 节假日判断
+│   ├── holiday.json         # 节假日本地数据
 │   ├── overtime.py          # 加班统计
 │   ├── salary.py            # 加班工资计算
 │   ├── leave.py             # 请假管理
@@ -52,8 +53,11 @@ pip install tkcalendar
 
 **可选依赖（增强功能）：**
 ```bash
-# 节假日判断（推荐）
+# 节假日判断
 pip install chinesecalendar
+
+# 节假日本地数据
+下载指定年份的节假日信息Json，更新至/modules/holiday.json内[免费Api](https://www.mxnzp.com/doc/detail?id=1)
 
 # Excel导出
 pip install openpyxl
