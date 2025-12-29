@@ -1,5 +1,4 @@
-# core/data_manager.py - 完整的 DataManager 类
-
+# core/data_manager.py
 import os
 import csv
 import shutil
@@ -25,10 +24,10 @@ class DataManager:
             print(f"✓ 创建备份目录: {self.backup_dir}")
 
     def create_file_if_not_exists(self):
-        """如果文件不存在则创建CSV文件"""
+        """如果文件不存在则创建CSV文件 - 使用UTF-8-sig"""
         if not os.path.exists(self.overtime_file):
-            # 创建文件并写入表头
-            with open(self.overtime_file, 'w', newline='', encoding='utf-8') as f:
+            # 🎯 使用 utf-8-sig 编码（带BOM，Excel可识别）
+            with open(self.overtime_file, 'w', newline='', encoding='utf-8-sig') as f:
                 writer = csv.writer(f)
                 writer.writerow(["日期", "用户", "类型", "加班时长", "请假类型", "请假时长", "提交时间", "加班工资"])
             print(f"✓ 创建数据文件: {self.overtime_file}")
@@ -36,9 +35,10 @@ class DataManager:
             print(f"ℹ CSV文件已存在: {self.overtime_file}")
 
     def add_record(self, record: List[str]) -> bool:
-        """添加记录"""
+        """添加记录 - 使用UTF-8-sig"""
         try:
-            with open(self.overtime_file, 'a', newline='', encoding='utf-8') as f:
+            # 🎯 使用 utf-8-sig 编码
+            with open(self.overtime_file, 'a', newline='', encoding='utf-8-sig') as f:
                 writer = csv.writer(f)
                 writer.writerow(record)
             return True
@@ -51,14 +51,25 @@ class DataManager:
         if not os.path.exists(self.overtime_file):
             return []
 
-        try:
-            with open(self.overtime_file, 'r', encoding='utf-8') as f:
-                reader = csv.reader(f)
-                next(reader)  # 跳过表头
-                return list(reader)
-        except Exception as e:
-            print(f"✗ 读取记录失败: {e}")
-            return []
+        # 🎯 尝试多种编码
+        encodings = ['utf-8-sig', 'utf-8', 'gbk', 'gb2312']
+        for encoding in encodings:
+            try:
+                with open(self.overtime_file, 'r', encoding=encoding) as f:
+                    reader = csv.reader(f)
+                    next(reader, None)  # 跳过表头
+                    records = [row for row in reader if row]
+                    if records:
+                        print(f"✓ 使用编码 {encoding} 读取成功")
+                        return records
+            except UnicodeDecodeError:
+                continue
+            except Exception as e:
+                print(f"⚠ 编码 {encoding} 失败: {e}")
+                continue
+
+        print("✗ 所有编码尝试失败")
+        return []
 
     def get_all_records_with_total(self) -> Tuple[List[List[str]], int]:
         """获取所有记录和总数"""
@@ -97,59 +108,76 @@ class DataManager:
         failed = 0
         errors = []
 
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                reader = csv.reader(f)
-                headers = next(reader, None)
+        # 🎯 尝试多种编码
+        encodings = ['utf-8-sig', 'utf-8', 'gbk', 'gb2312', 'big5']
 
-                for i, row in enumerate(reader, 1):
-                    if not row:
-                        continue
+        for encoding in encodings:
+            try:
+                with open(file_path, 'r', encoding=encoding) as f:
+                    reader = csv.reader(f)
+                    headers = next(reader, None)
 
-                    try:
-                        # 处理可能的空字段
-                        if len(row) < 8:
-                            row.extend([""] * (8 - len(row)))
+                    for i, row in enumerate(reader, 1):
+                        if not row:
+                            continue
 
-                        # 确保有用户
-                        if not row[1]:
-                            row[1] = default_user
+                        try:
+                            # 处理可能的空字段
+                            if len(row) < 8:
+                                row.extend([""] * (8 - len(row)))
 
-                        # 验证日期格式
-                        datetime.strptime(row[0], "%Y-%m-%d")
+                            # 确保有用户
+                            if not row[1]:
+                                row[1] = default_user
 
-                        if self.add_record(row):
-                            imported += 1
-                        else:
+                            # 验证日期格式
+                            datetime.strptime(row[0], "%Y-%m-%d")
+
+                            if self.add_record(row):
+                                imported += 1
+                            else:
+                                failed += 1
+                                errors.append(f"第{i}行: 保存失败")
+                        except ValueError:
                             failed += 1
-                            errors.append(f"第{i}行: 保存失败")
-                    except ValueError:
-                        failed += 1
-                        errors.append(f"第{i}行: 日期格式错误")
-                    except Exception as e:
-                        failed += 1
-                        errors.append(f"第{i}行: {str(e)}")
+                            errors.append(f"第{i}行: 日期格式错误")
+                        except Exception as e:
+                            failed += 1
+                            errors.append(f"第{i}行: {str(e)}")
 
-                    if len(errors) >= 5:
-                        errors.append("...更多错误省略")
-                        break
+                        if len(errors) >= 5:
+                            errors.append("...更多错误省略")
+                            break
 
-            return imported, failed, errors[:5]
+                print(f"✓ 使用编码 {encoding} 导入成功")
+                return imported, failed, errors[:5]
 
-        except Exception as e:
-            return 0, 0, [f"文件读取失败: {str(e)}"]
+            except UnicodeDecodeError:
+                continue
+            except Exception as e:
+                errors.append(f"编码 {encoding} 失败: {str(e)}")
+                continue
+
+        return 0, 0, ["文件读取失败，所有编码尝试均失败"]
 
     def export_excel(self, file_path: str) -> bool:
         """导出到Excel"""
         try:
-            from openpyxl import Workbook
-            from openpyxl.styles import Font, Alignment, PatternFill
+            # 检查openpyxl是否安装
+            try:
+                from openpyxl import Workbook
+                from openpyxl.styles import Font, Alignment, PatternFill
+            except ImportError:
+                print("✗ 未安装openpyxl，请执行: pip install openpyxl")
+                return False
 
             records = self.get_all_records()
 
             if not records:
+                print("⚠ 没有数据可导出")
                 return False
 
+            # 创建工作簿
             wb = Workbook()
             ws = wb.active
             ws.title = "加班记录"
@@ -166,7 +194,9 @@ class DataManager:
             # 数据
             for row_idx, record in enumerate(records, 2):
                 for col_idx, value in enumerate(record, 1):
-                    ws.cell(row=row_idx, column=col_idx, value=value)
+                    # 🎯 确保值不为None
+                    cell_value = str(value) if value is not None else ""
+                    ws.cell(row=row_idx, column=col_idx, value=cell_value)
 
             # 调整列宽
             for col in ws.columns:
@@ -174,20 +204,29 @@ class DataManager:
                 column = col[0].column_letter
                 for cell in col:
                     try:
-                        if len(str(cell.value)) > max_length:
-                            max_length = len(str(cell.value))
+                        cell_value = str(cell.value) if cell.value else ""
+                        if len(cell_value) > max_length:
+                            max_length = len(cell_value)
                     except:
                         pass
-                ws.column_dimensions[column].width = max_length + 2
+                # 最小宽度8，最大宽度50
+                ws.column_dimensions[column].width = min(max(max_length + 2, 8), 50)
 
+            #确保目录存在
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+            # 保存文件
             wb.save(file_path)
+            print(f"✓ Excel文件已保存: {file_path}")
             return True
 
-        except ImportError:
-            print("✗ 未安装openpyxl，无法导出Excel")
+        except PermissionError:
+            print(f"✗ 权限错误，文件可能被占用: {file_path}")
             return False
         except Exception as e:
             print(f"✗ 导出Excel失败: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
     def backup(self) -> bool:
