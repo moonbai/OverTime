@@ -2,10 +2,9 @@
 import sys
 import traceback
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, Toplevel, Label, Frame, Button
 from datetime import datetime
-
-# 导入核心模块
+import webbrowser# 导入核心模块
 from core.config import ConfigManager
 from core.data_manager import DataManager
 
@@ -47,8 +46,8 @@ class OvertimeSystem:
             messagebox.showerror("错误", str(e))
             sys.exit(1)
 
-        # 2. 业务模块
-        self.modules['holiday'] = HolidayChecker()
+        # 2. 业务模块 - 修正初始化
+        self.modules['holiday'] = HolidayChecker(self.config_manager)
         self.modules['overtime'] = OvertimeModule(
             self.data_manager,
             self.modules['holiday'],
@@ -73,6 +72,23 @@ class OvertimeSystem:
             self.stop_web_service
         )
 
+        #菜单栏
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
+
+        file_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="文件", menu=file_menu)
+        file_menu.add_command(label="设置", command=self.open_settings)
+        file_menu.add_separator()
+        file_menu.add_command(label="退出", command=self.root.quit)
+
+        help_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="帮助", menu=help_menu)
+        help_menu.add_command(label="关于", command=self.show_about)
+
+        # 绑定关闭事件
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
         print("="*60)
         print("✓ 系统初始化完成")
         print("="*60)
@@ -85,9 +101,11 @@ class OvertimeSystem:
         def get_html():
             leave_types = self.config_manager.get('leave_types', ['事假', '病假', '年假', '婚假', '产假'])
             webhook_enabled = self.config_manager.get('webhook.enabled', False)
-            holiday_info = "✅ 已集成" if self.modules['holiday'] else "⚠️ 未配置"
 
-            return get_html_template(leave_types, webhook_enabled, holiday_info)
+            # 检查holiday状态
+            holiday_status = "✅已集成" if self.modules['holiday'].calendar_available or self.modules['holiday'].holiday_config else "⚠️ 未配置"
+
+            return get_html_template(leave_types, webhook_enabled, holiday_status)
 
         # 获取数据
         def get_data():
@@ -180,3 +198,110 @@ class OvertimeSystem:
             self.main_window.update_web_status("服务已停止", False)
         else:
             messagebox.showerror("停止失败", message)
+
+    def show_about(self):
+        """显示关于信息 - 带GitHub链接"""
+        def open_github():
+            try:
+                webbrowser.open("https://github.com/moonbai/OverTime")
+            except:
+                messagebox.showerror("错误", "无法打开浏览器")
+
+        # 创建对话框
+        about_window = Toplevel(self.root)
+        about_window.title("关于")
+        about_window.geometry("720x600")
+        about_window.transient(self.root)
+        about_window.grab_set()
+
+        # 主框架
+        main_frame = Frame(about_window, padx=20, pady=20)
+        main_frame.pack(fill='both', expand=True)
+
+        # 标题
+        Label(main_frame, text="加班管理系统", font=("Arial", 18, "bold"), fg="#1976D2").pack(pady=5)
+        Label(main_frame, text="v2.0", font=("Arial", 10), fg="#666666").pack()
+
+        # 功能列表
+        Label(main_frame, text="功能特性：", font=("Arial", 9, "bold"), anchor='w').pack(fill='x', pady=(15, 5))
+
+        features = [
+            "• 数据录入与管理",
+            "• Web服务支持",
+            "• Webhook推送",
+            "• 智能节假日判断",
+            "• 加班工资计算",
+            "• API格式节假日数据"
+        ]
+
+        for feature in features:
+            Label(main_frame, text=feature, font=("Arial", 9), anchor='w').pack(fill='x', padx=10)
+
+        # GitHub链接区域
+        github_frame = Frame(main_frame, bg="#F5F5F5", padx=10, pady=8)
+        github_frame.pack(fill='x', pady=(15, 5))
+
+        Label(github_frame, text="开源地址：", font=("Arial", 9, "bold"), bg="#F5F5F5").pack(anchor='w')
+
+        # 可点击的链接按钮
+        Button(github_frame, text="https://github.com/moonbai/OverTime",
+               command=open_github,
+               bg="#E3F2FD", fg="#1976D2", relief='flat', font=("Arial", 9, "underline"),
+               cursor="hand2", padx=5).pack(anchor='w', pady=3)
+
+        # 更新日志
+        Label(main_frame, text="更新内容：", font=("Arial", 9, "bold"), anchor='w').pack(fill='x', pady=(10, 5))
+
+        updates = [
+            "• 支持API格式节假日数据",
+            "• 按detailsType精确分类",
+            "• 普通节假日统计为休息日",
+            "• 三倍工资节假日单独识别"
+        ]
+
+        for update in updates:
+            Label(main_frame, text=update, font=("Arial", 8), anchor='w').pack(fill='x', padx=10)
+
+        # 底部
+        Label(main_frame, text="\n© 加班管理系统", font=("Arial", 8), fg="#666666").pack(pady=10)
+
+        # 按钮
+        Button(main_frame, text="关闭", command=about_window.destroy,
+               bg="#757575", fg="white", width=10).pack(pady=5)
+
+        # 居中窗口
+        about_window.update_idletasks()
+        width = about_window.winfo_width()
+        height = about_window.winfo_height()
+        x = (about_window.winfo_screenwidth() // 2) - (width // 2)
+        y = (about_window.winfo_screenheight() // 2) - (height // 2)
+        about_window.geometry(f"{width}x{height}+{x}+{y}")
+
+    def on_closing(self):
+        """程序关闭时的清理"""
+        try:
+            if self.modules['web_service'].is_running():
+                if messagebox.askyesno("确认", "Web服务正在运行，确定要退出吗？"):
+                    self.stop_web_service()
+                    self.root.destroy()
+            else:
+                self.root.destroy()
+        except:
+            self.root.destroy()
+
+if __name__ == "__main__":
+    try:
+        root = tk.Tk()
+        root.title("加班管理系统")
+        root.geometry("800x650")
+        root.minsize(750, 600)
+
+        system = OvertimeSystem(root)
+        root.mainloop()
+    except Exception as e:
+        print("\n============================================================")
+        print("启动失败！")
+        print("============================================================")
+        traceback.print_exc()
+        print("\n按回车键退出...")
+        input()

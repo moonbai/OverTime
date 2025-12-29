@@ -108,23 +108,22 @@ class MainWindow:
         # 用户和日期在同一行
         row1 = tk.Frame(form_frame)
         row1.pack(fill='x', pady=3)
+
         tk.Label(row1, text="用户:*", width=6, anchor='w').pack(side='left')
         self.user_entry = tk.Entry(row1, width=12)
         self.user_entry.pack(side='left', padx=2)
 
-        # 立即读取默认用户（而不是延迟）
+        # 立即读取默认用户
         default_user = self.config_manager.get('last_user', '')
         if default_user:
             self.user_entry.insert(0, default_user)
-            print(f"✓ 已加载默认用户: {default_user}")  # 调试信息
 
-        # 日期
         tk.Label(row1, text="日期:*", width=6, anchor='w').pack(side='left', padx=(10, 0))
         self.date_display = tk.Entry(row1, width=12, state='readonly', readonlybackground='white')
         self.date_display.pack(side='left', padx=2)
 
         tk.Button(row1, text="📅", command=self.open_calendar,
-                  bg="#2196F3", fg="white", width=2).pack(side='left', padx=2)
+                 bg="#2196F3", fg="white", width=2).pack(side='left', padx=2)
 
         self.date_entry = tk.Entry(row1, width=12)
         self.date_entry.pack_forget()
@@ -136,7 +135,7 @@ class MainWindow:
         self.date_display.bind('<FocusOut>', lambda e: self.update_date_and_detect())
         self.date_display.bind('<Return>', lambda e: self.update_date_and_detect())
 
-        # 日期类型
+        # 日期类型 - 紧凑布局
         row2 = tk.Frame(form_frame)
         row2.pack(fill='x', pady=3)
         tk.Label(row2, text="类型:*", width=6, anchor='w').pack(side='left')
@@ -155,7 +154,7 @@ class MainWindow:
         self.is_leave = tk.BooleanVar()
         self.is_leave.set(False)
         tk.Checkbutton(row3, text="请假", variable=self.is_leave,
-                       command=self.toggle_leave_options).pack(side='left', padx=(0, 10))
+                      command=self.toggle_leave_options).pack(side='left', padx=(0, 10))
 
         # 动态区域
         self.dynamic_frame = tk.Frame(row3)
@@ -179,13 +178,10 @@ class MainWindow:
         btn_frame = tk.Frame(form_frame)
         btn_frame.pack(fill='x', pady=5)
         tk.Button(btn_frame, text="✅ 提交记录", command=self.submit_record,
-                  bg="#4CAF50", fg="white", width=15, font=("Arial", 9, "bold")).pack(side='left', padx=3)
+                 bg="#4CAF50", fg="white", width=15, font=("Arial", 9, "bold")).pack(side='left', padx=3)
 
-        # 延迟设置日期和检测
+        # 延迟设置日期
         self.root.after(100, self._force_set_today)
-        # 确保用户配置正确加载的调试信息
-        print(f"配置中的默认用户: {self.config_manager.get('last_user', '未设置')}")
-
 
     def _force_set_today(self):
         """强制设置今天日期"""
@@ -193,17 +189,14 @@ class MainWindow:
             if hasattr(self, 'date_display') and hasattr(self, 'date_entry'):
                 today = datetime.now().strftime("%Y-%m-%d")
 
-                # 设置显示框
                 self.date_display.config(state='normal')
                 self.date_display.delete(0, tk.END)
                 self.date_display.insert(0, today)
                 self.date_display.config(state='readonly')
 
-                # 设置隐藏框
                 self.date_entry.delete(0, tk.END)
                 self.date_entry.insert(0, today)
 
-                # 立即检测
                 if hasattr(self, 'auto_detect_day_type'):
                     self.auto_detect_day_type()
 
@@ -290,11 +283,17 @@ class MainWindow:
 
     def update_holiday_info(self):
         """更新节假日信息显示"""
-        if self.modules['holiday'].calendar_available:
+        if hasattr(self, 'config_manager'):
+            use_builtin = self.config_manager.get('use_builtin_holiday', False)
             years = self.modules['holiday'].get_supported_years()
-            self.holiday_info.config(text=f"✓ 已集成 chinese_calendar | 支持年份: {years[0]}-{years[-1]}", fg="#4CAF50")
-        else:
-            self.holiday_info.config(text="⚠️️使用内置数据 | 支持年份: 2024-2026", fg="#F44336")
+
+            if use_builtin:
+                self.holiday_info.config(text=f"✓内置数据 | 支持年份: {years[0]}-{years[-1]}", fg="#4CAF50")
+            else:
+                if self.modules['holiday'].calendar_available:
+                    self.holiday_info.config(text=f"✓ chinese_calendar | 支持年份: {years[0]}-{years[-1]}", fg="#4CAF50")
+                else:
+                    self.holiday_info.config(text=f"⚠️ 未配置数据源 | 支持年份: 2024-2026", fg="#F44336")
 
     def toggle_leave_options(self):
         """切换请假选项"""
@@ -341,8 +340,6 @@ class MainWindow:
         except:
             pass
 
-    # ui/main_window.py - open_calendar 方法
-
     def open_calendar(self):
         """打开日历选择器 - 优化版"""
         try:
@@ -356,8 +353,8 @@ class MainWindow:
             cal_window.transient(self.root)
             cal_window.grab_set()
 
-            # 🆕1. 居中显示
-            self.root.update_idletasks()  # 更新窗口尺寸
+            # 居中显示
+            self.root.update_idletasks()
             root_x = self.root.winfo_x()
             root_y = self.root.winfo_y()
             root_w = self.root.winfo_width()
@@ -371,7 +368,7 @@ class MainWindow:
 
             cal_window.geometry(f"{cal_w}x{cal_h}+{x}+{y}")
 
-            # 🆕 2. 确定初始日期（优先使用已选择的日期，否则今天）
+            # 确定初始日期
             try:
                 existing_date = self.date_entry.get().strip()
                 if existing_date:
@@ -381,56 +378,49 @@ class MainWindow:
             except:
                 initial_date = datetime.now()
 
-            # 🆕 3. 创建日历（设置中文月份）
+            # 创建日历
             cal = Calendar(cal_window,
-                           selectmode='day',
-                           year=initial_date.year,
-                           month=initial_date.month,
-                           day=initial_date.day,
-                           date_pattern='yyyy-mm-dd',
-                           locale='zh_CN')  # 设置中文 locale
-
+                          selectmode='day',
+                          year=initial_date.year,
+                          month=initial_date.month,
+                          day=initial_date.day,
+                          date_pattern='yyyy-mm-dd')
             cal.pack(padx=10, pady=10)
 
-            # 🆕 4. 按钮区域
+            # 按钮区域
             btn_frame = tk.Frame(cal_window)
             btn_frame.pack(pady=5)
 
             def select_date():
                 selected = cal.get_date()
 
-                # 更新显示框
                 self.date_display.config(state='normal')
                 self.date_display.delete(0, tk.END)
                 self.date_display.insert(0, selected)
                 self.date_display.config(state='readonly')
 
-                # 更新隐藏框
                 self.date_entry.delete(0, tk.END)
                 self.date_entry.insert(0, selected)
 
                 cal_window.destroy()
-                self.auto_detect_day_type()  # 选择后自动检测
+                self.auto_detect_day_type()
 
             def go_today():
-                # 跳转到今天
                 today = datetime.now()
                 cal.selection_set(today)
                 cal.display_date(today)
 
-            # 🆕 5. 按钮布局
             tk.Button(btn_frame, text="✅确定", command=select_date,
-                      bg="#4CAF50", fg="white", width=8).pack(side='left', padx=3)
+                     bg="#4CAF50", fg="white", width=8).pack(side='left', padx=3)
 
-            tk.Button(btn_frame, text="📅 今天", command=go_today,
-                      bg="#2196F3", fg="white", width=8).pack(side='left', padx=3)
+            tk.Button(btn_frame, text="📅今天", command=go_today,
+                     bg="#2196F3", fg="white", width=8).pack(side='left', padx=3)
 
-            tk.Button(btn_frame, text="✖ 取消", command=cal_window.destroy,
-                      bg="#E0E0E0", width=8).pack(side='left', padx=3)
+            tk.Button(btn_frame, text="✖取消", command=cal_window.destroy,
+                     bg="#E0E0E0", width=8).pack(side='left', padx=3)
 
         except ImportError:
-            messagebox.showinfo("提示",
-                                "未安装tkcalendar库\n\n请执行安装：\npip install tkcalendar\n\n或直接手动输入日期（格式：YYYY-MM-DD）")
+            messagebox.showinfo("提示", "未安装tkcalendar库\n\n请执行安装：\npip install tkcalendar\n\n或直接手动输入日期（格式：YYYY-MM-DD）")
         except Exception as e:
             messagebox.showerror("错误", f"打开日历失败: {str(e)}")
 
@@ -438,74 +428,67 @@ class MainWindow:
         """更新日期并自动检测（支持手动输入）"""
         date_str = self.date_display.get().strip()
         if date_str:
-            #同步到隐藏框
             self.date_entry.delete(0, tk.END)
             self.date_entry.insert(0, date_str)
             self.auto_detect_day_type()
 
-    # ui/main_window.py
-
     def auto_detect_day_type(self):
-        """自动判断日期类型"""
+        """自动判断日期类型 - 显示详细信息"""
         try:
             date_str = self.date_entry.get().strip()
             if not date_str:
                 self.result_label.config(text="等待输入日期...", fg="#666666")
                 return
-
-            # 验证日期格式
+    
             datetime.strptime(date_str, "%Y-%m-%d")
-
-            # 🆕打印调试信息到控制台
-            print(f"\n{'=' * 60}")
+    
+            # 使用get_holiday_info获取详细信息
+            info = self.modules['holiday'].get_holiday_info(date_str)
+    
+            # 打印详细信息
+            print(f"\n{'='*60}")
             print(f"📅 日期检测: {date_str}")
-            print(f"{'=' * 60}")
-
-            detected_type, reason = self.modules['holiday'].get_day_type(date_str)
-
-            # 打印详细结果
-            print(f"✓ 检测结果: {detected_type}")
-            print(f"  原因: {reason}")
-            # 如果使用了 chinese_calendar，打印原始数据
-            if self.modules['holiday'].calendar_available:
-                try:
-                    import chinese_calendar as calendar
-                    from datetime import datetime as dt
-                    date_obj = dt.strptime(date_str, "%Y-%m-%d").date()
-
-                    is_holiday, holiday_name = calendar.get_holiday_detail(date_obj)
-                    is_in_lieu = calendar.is_in_lieu(date_obj)
-                    is_workday = calendar.is_workday(date_obj)
-
-                    print(f"  原始数据:")
-                    print(f"    - 是否节假日: {is_holiday}")
-                    print(f"    - 是否调休: {is_in_lieu}")
-                    print(f"    - 是否工作日: {is_workday}")
-                    if holiday_name:
-                        name = holiday_name.value if hasattr(holiday_name, 'value') else str(holiday_name)
-                        print(f"    - 节日名称: {name}")
-                except Exception as e:
-                    print(f"  无法获取原始数据: {e}")
-
-            print(f"{'=' * 60}\n")
-
+            print(f"{'='*60}")
+            print(f"类型: {info['type']}")
+            print(f"描述: {info['typeDes']}")
+            print(f"详情类型: {info['detailsType']}")
+            print(f"工作日序号: {info['indexWorkDayOfMonth']}")
+    
+            # 🎯 根据detailsType返回最终类型
+            if info['detailsType'] == 3:
+                final_type = "节假日"
+                reason = f"{info['typeDes']}(三倍工资)"
+            elif info['detailsType'] == 2:
+                final_type = "休息日"  # ✅ 普通节假日 = 休息日
+                reason = f"{info['typeDes']}(普通节假日)"
+            elif info['detailsType'] == 1:
+                final_type = "休息日"
+                reason = info['typeDes']
+            elif info['detailsType'] == 0:
+                final_type = "工作日"
+                reason = info['typeDes']
+            else:
+                final_type = "未知"
+                reason = "未知"
+    
+            print(f"最终判定: {final_type} ({reason})")
+            print(f"{'='*60}\n")
+    
             # 更新界面
-            self.day_type.set(detected_type)
-            self.result_label.config(text=f"✓ {detected_type} ({reason})", fg="#4CAF50")
-
-            # 3秒后恢复默认颜色
+            self.day_type.set(final_type)
+            self.result_label.config(text=f"✓ {final_type} ({reason})", fg="#4CAF50")
+    
             self.root.after(3000, lambda: self.result_label.config(fg="#666666"))
-            self.status_var.set(f"已自动判断: {detected_type} ({reason})")
-
+            self.status_var.set(f"已自动判断: {final_type} ({reason})")
+    
         except ValueError:
             self.result_label.config(text="❌ 日期格式错误", fg="#F44336")
-            print(f"\n❌ 日期格式错误: {date_str}\n")
             self.root.after(3000, lambda: self.result_label.config(text="等待输入日期...", fg="#666666"))
         except Exception as e:
             self.result_label.config(text=f"❌ 检测失败", fg="#F44336")
             print(f"\n❌ 检测失败: {e}\n")
             self.root.after(3000, lambda: self.result_label.config(text="等待输入日期...", fg="#666666"))
-
+    
     def submit_record(self):
         """提交记录"""
         try:
@@ -521,10 +504,10 @@ class MainWindow:
                 messagebox.showerror("错误", "日期格式错误，请使用YYYY-MM-DD")
                 return
 
-            # 🆕 打印提交信息
-            print(f"\n{'=' * 60}")
+            # 打印提交信息
+            print(f"\n{'='*60}")
             print(f"📝 提交记录")
-            print(f"{'=' * 60}")
+            print(f"{'='*60}")
             print(f"用户: {user}")
             print(f"日期: {date_str}")
             print(f"类型: {day_type}")
@@ -537,7 +520,7 @@ class MainWindow:
                 if detected_type != day_type and not self.is_leave.get():
                     print(f"⚠️ 类型不匹配！检测到 {detected_type}，但用户选择 {day_type}")
                     if not messagebox.askyesno("类型不匹配",
-                                               f"检测到 {detected_type} ({reason})\n但你选择的是 {day_type}\n\n确定要提交吗？"):
+                        f"检测到 {detected_type} ({reason})\n但你选择的是 {day_type}\n\n确定要提交吗？"):
                         print(f"❌ 用户取消提交\n")
                         return
 
@@ -557,7 +540,6 @@ class MainWindow:
                     messagebox.showerror("错误", "请选择请假类型")
                     return
 
-                # 检查该请假类型是否需要扣除工时
                 deduct_types = self.config_manager.get('overtime_pay.deduct_types', ['事假'])
                 should_deduct = leave_type in deduct_types
 
@@ -571,7 +553,6 @@ class MainWindow:
                     data['leave_type'] = leave_type
                     data['leave_hours'] = '0'
 
-                # 根据配置决定是否扣除工时
                 if should_deduct:
                     data['day_type'] = "休息日"
                     data['work_hours'] = data.get('leave_hours', '0')
@@ -596,7 +577,7 @@ class MainWindow:
 
                 data['work_hours'] = work_hours
 
-            # 计算加班工资
+            # 计算工资
             if data['calculate_salary']:
                 if data['is_leave']:
                     should_deduct = data['leave_type'] in self.config_manager.get('overtime_pay.deduct_types', ['事假'])
@@ -619,18 +600,20 @@ class MainWindow:
                         '类型': '桌面程序填报',
                         '日期': data['date'],
                         '用户': data['user'],
-                        '加班类型': data['day_type'],
-                        '加班时长': data.get('work_hours', data.get('leave_hours', '0')),
+                        '工作类型': data['day_type'],
+                        '工作时长': data.get('work_hours', data.get('leave_hours', '0')),
                         '请假类型': data.get('leave_type', '无'),
                         '请假时长': data.get('leave_hours', '无'),
                         '提交时间': format_timestamp(),
-                        '加班工资': data['salary'],
-                        '提交方式': '程序提报'
+                        '工资': data['salary'],
+                        '提交方式': '程序'
                     }
                     self.modules['webhook'].send(webhook_data)
+
                 print(f"✅ 提交成功！工资: {data['salary']}")
-                print(f"{'=' * 60}\n")
-                messagebox.showinfo("成功", f"{message}\n加班工资: {data['salary']}")
+                print(f"{'='*60}\n")
+
+                messagebox.showinfo("成功", f"{message}\n工资: {data['salary']}")
                 self.status_var.set(f"✓ 已提交 - {user}")
                 self.root.after(3000, lambda: self.status_var.set("就绪"))
 
@@ -644,8 +627,10 @@ class MainWindow:
                 self.update_summary()
             else:
                 messagebox.showerror("失败", message)
+                print(f"❌ 提交失败: {message}\n")
         except Exception as e:
             messagebox.showerror("错误", f"提交失败: {str(e)}")
+            print(f"❌ 提交异常: {e}\n")
 
     def apply_filter(self):
         """应用筛选"""
@@ -708,8 +693,7 @@ class MainWindow:
 
             page_records = all_records[start_idx:end_idx]
 
-            #显示8列：日期 用户 类型 工时 请假类型 请假时长 加班工资 提交时间
-            headers = ["日期", "用户", "类型", "工时", "请假类型", "请假时长", "加班工资", "提交时间"]
+            headers = ["日期", "用户", "类型", "工时", "请假类型", "请假时长", "工资", "提交时间"]
             for i, header in enumerate(headers):
                 tk.Label(self.record_frame, text=header, font=("Arial", 9, "bold"),
                         relief=tk.RIDGE, width=11, bg="#e0e0e0").grid(row=0, column=i, sticky="nsew")
@@ -751,14 +735,14 @@ class MainWindow:
             tk.Label(base_frame, text=f"总时长: {total_hours:.1f}小时",
                     bg="#f5f5f5", font=("Arial", 9)).pack(side='left', padx=5)
 
-            # 加班工资统计
+            # 工资统计
             if self.config_manager.get('overtime_pay.enabled', False):
                 total_salary, _ = self.modules['salary'].calculate_batch(self.data_manager.get_monthly_records(summary['month']))
                 if total_salary > 0:
                     hourly_wage = self.config_manager.get('overtime_pay.hourly_wage', 50.0)
-                    tk.Label(base_frame, text=f"小时加班工资: {hourly_wage}元/小时",
+                    tk.Label(base_frame, text=f"小时工资: {hourly_wage}元/小时",
                             bg="#f5f5f5", font=("Arial", 9)).pack(side='left', padx=10)
-                    tk.Label(base_frame, text=f"总加班工资: {total_salary:.2f}元",
+                    tk.Label(base_frame, text=f"总工资: {total_salary:.2f}元",
                             bg="#f5f5f5", font=("Arial", 9, "bold"), fg="#4CAF50").pack(side='left', padx=10)
 
             # 详细分类
@@ -903,7 +887,7 @@ class MainWindow:
 
             # 表格控件
             tree = ttk.Treeview(table_frame,
-                               columns=('日期', '用户', '加班类型', '加班时长', '请假类型', '请假时长', '提交时间', '加班工资'),
+                               columns=('日期', '用户', '类型', '工作时长', '请假类型', '请假时长', '提交时间', '工资'),
                                show='headings',
                                yscrollcommand=scrollbar_y.set,
                                xscrollcommand=scrollbar_x.set)
@@ -913,8 +897,8 @@ class MainWindow:
 
             # 配置列
             columns = [
-                ('日期', 100), ('用户', 80), ('加班类型', 80), ('加班时长', 70),
-                ('请假类型', 80), ('请假时长', 70), ('提交时间', 130), ('加班工资', 80)
+                ('日期', 100), ('用户', 80), ('类型', 80), ('工作时长', 70),
+                ('请假类型', 80), ('请假时长', 70), ('提交时间', 130), ('工资', 80)
             ]
 
             for col, width in columns:
@@ -957,9 +941,9 @@ class MainWindow:
                     item = tree.item(selected[0])
                     values = item['values']
                     messagebox.showinfo("记录详情",
-                                      f"日期: {values[0]}\n用户: {values[1]}\n加班类型: {values[2]}\n"
+                                      f"日期: {values[0]}\n用户: {values[1]}\n类型: {values[2]}\n"
                                       f"时长: {values[3]}小时\n请假: {values[4]} ({values[5]})\n"
-                                      f"加班工资: {values[7]}\n时间: {values[6]}")
+                                      f"工资: {values[7]}\n时间: {values[6]}")
 
             def delete_record():
                 selected = tree.selection()
@@ -1035,14 +1019,14 @@ class MainWindow:
         except:
             pass
 
-    def install_chinesecalendar(self):
-        """安装chinesecalendar"""
+    def install_workalendar(self):
+        """安装workalendar"""
         try:
             import subprocess
-            result = subprocess.run([sys.executable, "-m", "pip", "install", "chinesecalendar"],
+            result = subprocess.run([sys.executable, "-m", "pip", "install", "workalendar"],
                                   capture_output=True, text=True)
             if result.returncode == 0:
-                messagebox.showinfo("成功", "chinesecalendar安装成功！\n\n请重启程序")
+                messagebox.showinfo("成功", "workalendar安装成功！\n\n请重启程序")
             else:
                 messagebox.showerror("失败", f"安装失败:\n{result.stderr}")
         except Exception as e:

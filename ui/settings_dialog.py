@@ -2,6 +2,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
 import sys
+import os
+import json
 
 class SettingsDialog:
     """系统设置对话框"""
@@ -43,10 +45,15 @@ class SettingsDialog:
         notebook.add(self.leave_frame, text="请假配置")
         self.create_leave_settings()
 
-        # 加班加班工资
+        # 加班工资
         self.salary_frame = ttk.Frame(notebook)
         notebook.add(self.salary_frame, text="加班工资")
         self.create_salary_settings()
+
+        # 节假日数据源
+        self.holiday_frame = ttk.Frame(notebook)
+        notebook.add(self.holiday_frame, text="节假日数据")
+        self.create_holiday_settings()
 
         # Web服务/Webhook
         self.web_frame = ttk.Frame(notebook)
@@ -165,6 +172,41 @@ class SettingsDialog:
         tk.Label(frame, text="示例：小时加班工资50元，工作日加班8小时 = 50×8×1.0 = 400元",
                 font=("Arial", 8), fg="#666666").pack(anchor='w', padx=10, pady=0)
 
+    def create_holiday_settings(self):
+        """节假日数据源设置 - 精简版"""
+        frame = self.holiday_frame
+
+        # 数据源选择
+        tk.Label(frame, text="数据源:", font=("Arial", 9, "bold")).pack(anchor='w', padx=10, pady=5)
+
+        self.holiday_source = tk.StringVar()
+        source_frame = tk.Frame(frame)
+        source_frame.pack(fill='x', padx=10, pady=5)
+
+        tk.Radiobutton(source_frame, text="内置数据 (modules/holiday.json)",
+                      variable=self.holiday_source, value="builtin").pack(side='left', padx=5)
+
+        tk.Radiobutton(source_frame, text="chinese_calendar",
+                      variable=self.holiday_source, value="chinese").pack(side='left', padx=5)
+
+        # 操作按钮 - 仅保留获取JSON
+        btn_frame = tk.Frame(frame)
+        btn_frame.pack(fill='x', padx=10, pady=10)
+
+        tk.Button(btn_frame, text="获取官方JSON", command=self.get_official_json,
+                 bg="#9C27B0", fg="white", width=20).pack(side='left', padx=5)
+
+        tk.Button(btn_frame, text="安装 chinese_calendar", command=self.install_chinesecalendar,
+                 bg="#FF9800", fg="white", width=20).pack(side='left', padx=5)
+
+        # 状态显示
+        self.holiday_status = tk.Label(frame, text="", font=("Arial", 8), fg="#666666")
+        self.holiday_status.pack(anchor='w', padx=10, pady=5)
+
+        # 说明
+        tk.Label(frame, text="说明：\n• 内置数据: 从官网获取并保存到 modules/holiday.json\n• chinese_calendar: 安装依赖库自动判断",
+                font=("Arial", 8), fg="#666666").pack(anchor='w', padx=10, pady=5)
+
     def create_web_settings(self):
         frame = self.web_frame
 
@@ -238,7 +280,6 @@ Slack: 适合国际团队，集成众多应用
     def on_platform_change(self, event):
         """平台选择变化时更新说明"""
         platform_text = self.webhook_platform.get()
-        # 解析平台key
         platform_map = {
             '飞书 (Feishu)': 'feishu',
             '钉钉 (DingTalk)': 'dingtalk',
@@ -251,12 +292,10 @@ Slack: 适合国际团队，集成众多应用
         platform_key = platform_map.get(platform_text.split(' - ')[0] if ' - ' in platform_text else platform_text,
                                         'feishu')
 
-        # 获取配置 - 在这里导入
         try:
             from modules.webhook import WebhookModule
             wb = WebhookModule(self.config_manager)
 
-            # 更新提示
             hint = wb.get_url_hint(platform_key)
             self.url_hint_label.config(text=f"URL格式: {hint}")
 
@@ -282,7 +321,7 @@ Slack: 适合国际团队，集成众多应用
             if leave_type in self.deduct_vars:
                 self.deduct_vars[leave_type].set(leave_type in deduct_types)
 
-        # 加班加班工资
+        # 加班工资
         overtime_pay = self.config_manager.get('overtime_pay', {})
         self.salary_enabled.set(overtime_pay.get('enabled', False))
         self.hourly_wage.insert(0, str(overtime_pay.get('hourly_wage', 50.0)))
@@ -290,6 +329,11 @@ Slack: 适合国际团队，集成众多应用
         self.salary_weekend.insert(0, str(overtime_pay.get('weekend_rate', 1.5)))
         self.salary_holiday.insert(0, str(overtime_pay.get('holiday_rate', 2.0)))
         self.toggle_salary_inputs()
+
+        # 节假日数据源
+        use_builtin = self.config_manager.get('use_builtin_holiday', False)
+        self.holiday_source.set('builtin' if use_builtin else 'chinese')
+        self.update_holiday_status()
 
         # Web服务
         self.web_port.insert(0, str(self.config_manager.get('web_port', 8080)))
@@ -302,7 +346,7 @@ Slack: 适合国际团队，集成众多应用
         self.webhook_retry.insert(0, str(webhook.get('retry', 3)))
         self.webhook_mode.set(webhook.get('sync_mode', 'sync'))
 
-        # 平台选择 -延迟处理避免导入错误
+        # 平台选择
         platform = webhook.get('platform', 'feishu')
         platform_map = {
             'feishu': '飞书 (Feishu) - 企业级协作平台',
@@ -314,38 +358,28 @@ Slack: 适合国际团队，集成众多应用
         }
         self.webhook_platform.set(platform_map.get(platform, '飞书 (Feishu) - 企业级协作平台'))
 
-        # 延迟调用，避免导入问题
+        # 延迟调用
         self.dialog.after(100, lambda: self.on_platform_change(None))
 
-    def on_platform_change(self, event):
-        """平台选择变化时更新说明"""
-        try:
-            platform_text = self.webhook_platform.get()
-            # 解析平台key
-            platform_map = {
-                '飞书 (Feishu)': 'feishu',
-                '钉钉 (DingTalk)': 'dingtalk',
-                '企业微信 (WeChat Work)': 'wechat',
-                'Lark (飞书国际版)': 'lark',
-                'Slack': 'slack',
-                '自定义 (Custom)': 'custom'
-            }
+    def update_holiday_status(self):
+        """更新节假日状态显示"""
+        if not hasattr(self, 'holiday_status') or not hasattr(self, 'holiday_source'):
+            return
 
-            platform_key = platform_map.get(platform_text.split(' - ')[0] if ' - ' in platform_text else platform_text,
-                                            'feishu')
+        use_builtin = self.holiday_source.get() == 'builtin'
 
-            # 在方法内部导入
-            from modules.webhook import WebhookModule
-            wb = WebhookModule(self.config_manager)
-
-            # 更新提示
-            hint = wb.get_url_hint(platform_key)
-            self.url_hint_label.config(text=f"URL格式: {hint}")
-
-            format_info = wb.get_format_info(platform_key)
-            self.format_info.config(text=f"数据格式: {format_info}")
-        except Exception as e:
-            print(f"⚠️ 更新平台说明失败: {e}")
+        if use_builtin:
+            json_path = os.path.join("modules", "holiday.json")
+            if os.path.exists(json_path):
+                self.holiday_status.config(text="✓ 内置数据已配置 (holiday.json)", fg="#4CAF50")
+            else:
+                self.holiday_status.config(text="⚠ holiday.json不存在，请点击获取官方JSON", fg="#F44336")
+        else:
+            try:
+                import chinese_calendar
+                self.holiday_status.config(text="✓ chinese_calendar已安装", fg="#4CAF50")
+            except ImportError:
+                self.holiday_status.config(text="⚠ chinese_calendar未安装", fg="#F44336")
 
     def toggle_salary_inputs(self):
         enabled = self.salary_enabled.get()
@@ -360,16 +394,71 @@ Slack: 适合国际团队，集成众多应用
         self.leave_types_text.delete('1.0', tk.END)
         self.leave_types_text.insert('1.0', '\n'.join(leave_types))
 
-        #重新生成扣除规则复选框
         deduct_types = self.config_manager.get('overtime_pay.deduct_types', ['事假'])
+
         for widget in self.deduct_vars.values():
-            widget._root().destroy()
+            try:
+                widget._root().destroy()
+            except:
+                pass
         self.deduct_vars = {}
+
+        deduct_frame = self.leave_frame.winfo_children()[2]
+        for widget in deduct_frame.winfo_children():
+            widget.destroy()
 
         for leave_type in leave_types:
             var = tk.BooleanVar()
             self.deduct_vars[leave_type] = var
             var.set(leave_type in deduct_types)
+            cb = tk.Checkbutton(deduct_frame, text=leave_type, variable=var)
+            cb.pack(side='left', padx=5, pady=2)
+
+    def get_official_json(self):
+        """获取官方JSON数据 - 创建完整文件"""
+        import webbrowser
+        from tkinter import simpledialog
+
+        # 打开网页
+        if messagebox.askyesno("访问官网", "将打开 https://www.mxnzp.com/doc/detail?id=1\n\n是否继续？"):
+            try:
+                webbrowser.open("https://www.mxnzp.com/doc/detail?id=1")
+            except:
+                messagebox.showinfo("提示", "无法自动打开浏览器，请手动访问:\nhttps://www.mxnzp.com/doc/detail?id=1")
+
+        # 提示用户粘贴数据
+        def import_json():
+            data = simpledialog.askstring("导入JSON", "请粘贴从官网获取的完整JSON数据:")
+            if data and data.strip():
+                try:
+                    # 尝试解析JSON
+                    import json
+                    parsed = json.loads(data)
+
+                    # 保存到文件
+                    json_path = os.path.join("modules", "holiday.json")
+                    os.makedirs("modules", exist_ok=True)
+
+                    # 支持API格式
+                    if isinstance(parsed, list):
+                        holiday_data = parsed
+                    elif isinstance(parsed, dict) and "data" in parsed:
+                        holiday_data = parsed["data"]
+                    elif isinstance(parsed, dict) and any("days" in v for v in parsed.values()):
+                        holiday_data = parsed
+                    else:
+                        raise ValueError("不支持的JSON格式")
+
+                    with open(json_path, 'w', encoding='utf-8') as f:
+                        json.dump(holiday_data, f, ensure_ascii=False, indent=2)
+
+                    messagebox.showinfo("成功", f"✅ JSON数据已保存\n\n路径: {json_path}\n\n现在可以选择'内置数据'使用")
+                    self.update_holiday_status()
+                except Exception as e:
+                    messagebox.showerror("错误", f"JSON格式错误: {str(e)}")
+
+        # 延迟显示输入对话框
+        self.dialog.after(500, import_json)
 
     def save_and_close(self):
         try:
@@ -399,10 +488,14 @@ Slack: 适合国际团队，集成众多应用
             }
             self.config_manager.set('overtime_pay', overtime_pay)
 
+            # 节假日数据源
+            use_builtin = self.holiday_source.get() == 'builtin'
+            self.config_manager.set('use_builtin_holiday', use_builtin)
+
             # Web服务
             self.config_manager.set('web_port', int(self.web_port.get()))
 
-            # Webhook配置（支持多平台）
+            # Webhook配置
             platform_text = self.webhook_platform.get()
             platform_map = {
                 '飞书 (Feishu)': 'feishu', '钉钉 (DingTalk)': 'dingtalk',
@@ -484,13 +577,26 @@ Slack: 适合国际团队，集成众多应用
         webhook_module = WebhookModule(temp_manager)
         result = webhook_module.test()
 
-        if result['status'] == 'success':
-            messagebox.showinfo("测试成功",
-                               f"✅ {result['message']}\n\n"
-                               f"平台: {result.get('platform', 'N/A')}\n"
-                               f"状态码: {result.get('code', 'N/A')}")
+        # 修复返回值处理
+        if isinstance(result, dict):
+            if result.get('status') == 'success':
+                messagebox.showinfo("测试成功",
+                                   f"✅ {result.get('message', '成功')}\n\n"
+                                   f"平台: {result.get('platform', 'N/A')}\n"
+                                   f"状态码: {result.get('code', 'N/A')}")
+            else:
+                messagebox.showerror("测试失败", f"❌ {result.get('message', '未知错误')}")
+        elif isinstance(result, tuple) and len(result) == 2:
+            success, message = result
+            if success:
+                messagebox.showinfo("成功", message)
+            else:
+                messagebox.showerror("失败", message)
         else:
-            messagebox.showerror("测试失败", f"❌ {result['message']}")
+            if result:
+                messagebox.showinfo("成功", "Webhook测试成功")
+            else:
+                messagebox.showerror("失败", "Webhook测试失败")
 
     def install_chinesecalendar(self):
         """安装chinesecalendar"""
