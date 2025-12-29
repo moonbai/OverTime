@@ -833,20 +833,40 @@ class MainWindow:
                 title="保存Excel文件",
                 initialfile=f"加班记录_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
             )
-
+    
             if not save_path:
                 return
-
-            if self.data_manager.export_excel(save_path):
+    
+            # 显示进度
+            self.status_var.set("正在导出Excel...")
+            self.root.update()
+    
+            # 调用导出
+            result = self.data_manager.export_excel(save_path)
+    
+            if result:
                 if messagebox.askyesno("成功", f"Excel文件已保存:\n{save_path}\n\n是否立即打开？"):
                     import os
-                    os.startfile(save_path) if os.name == 'nt' else os.system(f'open "{save_path}"')
+                    if os.name == 'nt':
+                        os.startfile(save_path)
+                    else:
+                        os.system(f'open "{save_path}"')
+                self.status_var.set("导出完成")
             else:
-                messagebox.showerror("错误", "导出失败，请检查是否安装了openpyxl")
-
+                messagebox.showerror("错误",
+                    "导出失败\n\n可能原因：\n"
+                    "1. 未安装openpyxl（请在设置中安装）\n"
+                    "2. 文件被其他程序占用\n"
+                    "3. 没有数据可导出")
+                self.status_var.set("导出失败")
+    
+            self.root.after(3000, lambda: self.status_var.set("就绪"))
+    
         except Exception as e:
             messagebox.showerror("错误", f"导出失败: {str(e)}")
-
+            self.status_var.set("导出异常")
+            self.root.after(3000, lambda: self.status_var.set("就绪"))
+    
     def view_all_records(self):
         """查看所有记录"""
         try:
