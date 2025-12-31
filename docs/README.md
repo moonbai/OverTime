@@ -62,7 +62,7 @@ pip install chinesecalendar
 # Excel导出
 pip install openpyxl
 ```
-### 节假日本地数据[免费Api](https://www.mxnzp.com/doc/detail?id=1)
+### 通过[节假日本地数据免费Api](https://www.mxnzp.com/doc/detail?id=1)获取指定年份的节假日及万年历信息
 
 **检查环境：**
 ```bash
