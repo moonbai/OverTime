@@ -4,12 +4,12 @@ import json
 import time
 from typing import Dict, Any, List, Tuple
 
+
 class WebhookModule:
     """Webhook推送模块"""
+
     def __init__(self, config_manager):
         self.config_manager = config_manager
-
-        # 平台配置映射
         self.platform_configs = {
             'feishu': {
                 'name': '飞书',
@@ -71,10 +71,8 @@ class WebhookModule:
         retry = webhook_config.get('retry', 3)
         sync_mode = webhook_config.get('sync_mode', 'sync')
 
-        # 根据平台格式化数据
         payload = self._format_payload(data, platform)
 
-        # 同步或异步发送
         if sync_mode == 'async':
             import threading
             thread = threading.Thread(
@@ -87,163 +85,260 @@ class WebhookModule:
         else:
             return self._send_with_retry(url, payload, timeout, retry, platform)
 
-    def _format_payload(self, data: Dict[str, Any], platform: str) -> Dict[str, Any]:
-        """根据平台格式化数据"""
-
-        # 获取IP:端口信息
+    def _get_web_info(self) -> Tuple[str, str]:
+        """获取Web服务信息"""
         try:
             from core.utils import get_local_ip
             ip = get_local_ip()
             port = self.config_manager.get('web_port', 8080)
-            ip_port = f"{ip}:{port}"
-            web_url = f"http://{ip_port}"
+            return f"{ip}:{port}", f"http://{ip}:{port}"
         except:
-            ip_port = "localhost:8080"
-            web_url = "http://localhost:8080"
+            return "localhost:8080", "http://localhost:8080"
+
+    def _format_payload(self, data: Dict[str, Any], platform: str) -> Dict[str, Any]:
+        """根据平台格式化数据"""
+        ip_port, web_url = self._get_web_info()
 
         if platform == 'feishu' or platform == 'lark':
-            # 飞书/Lark - 卡片消息（按钮样式 + IP:端口）
-            return {
-                "msg_type": "interactive",
-                "card": {
-                    "header": {
-                        "title": {
-                            "tag": "plain_text",
-                            "content": "📝 加班记录通知"
-                        },
-                        "color": "blue"
-                    },
-                    "elements": [
-                        {
-                            "tag": "div",
-                            "text": {
-                                "tag": "plain_text",
-                                "content": self._build_text_content(data)
-                            }
-                        },
-                        {
-                            "tag": "action",
-                            "actions": [
-                                {
-                                    "tag": "button",
-                                    "text": {
-                                        "tag": "plain_text",
-                                        "content": f"📊 Web服务: {ip_port}"
-                                    },
-                                    "url": web_url,
-                                    "type": "default"
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
-
+            return self._build_feishu_card(data, ip_port, web_url)
         elif platform == 'dingtalk':
-            # 钉钉 - Markdown（链接样式）
-            return {
-                "msgtype": "markdown",
-                "markdown": {
-                    "title": "加班记录通知",
-                    "text": self._build_markdown_content(data) + f"\n\n[🔗 **Web服务** - {ip_port}]({web_url})"
-                }
-            }
-
+            return self._build_dingtalk_markdown(data, ip_port, web_url)
         elif platform == 'wechat':
-            # 企业微信 - 文本消息 + IP:端口
-            return {
-                "msgtype": "text",
-                "text": {
-                    "content": self._build_text_content(data) + f"\n\n📊 Web服务: {web_url}\n📍 {ip_port}"
-                }
-            }
-
+            return self._build_wechat_text(data, ip_port, web_url)
         elif platform == 'slack':
-            # Slack - Block + 按钮
-            return {
-                "blocks": [
-                    {
-                        "type": "header",
-                        "text": {
-                            "type": "plain_text",
-                            "text": "📝 加班记录通知"
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": self._build_slack_content(data)
-                        }
-                    },
-                    {
-                        "type": "actions",
-                        "elements": [
-                            {
-                                "type": "button",
-                                "text": {
-                                    "type": "plain_text",
-                                    "text": f"📊 Web服务: {ip_port}"
-                                },
-                                "url": web_url,
-                                "style": "primary"
-                            }
-                        ]
-                    }
-                ]
-            }
-
+            return self._build_slack_blocks(data, ip_port, web_url)
         elif platform == 'custom':
-            # 自定义 - 完整数据 + Web服务地址
             payload = data.copy()
             payload['web_service'] = web_url
             payload['ip_port'] = ip_port
             return payload
-
         else:
-            # 默认格式
             return data
 
-    def _build_text_content(self, data: Dict[str, Any]) -> str:
-        """构建文本内容"""
-        return f"""加班记录通知
-━━━━━━━━━━━━━━━━━━
-日期: {data.get('日期', '')}
-用户: {data.get('用户', '')}
-加班类型: {data.get('加班类型', '')}
-加班时长: {data.get('加班时长', '')}小时
-请假类型: {data.get('请假类型', '无')}
-请假时长: {data.get('请假时长', '无')}
-加班工资: {data.get('加班工资', '0')}
-提交时间: {data.get('提交时间', '')}
-提交方式: {data.get('提交方式', '')}"""
+    def _build_feishu_card(
+        self,
+        data: Dict[str, Any],
+        ip_port: str,
+        web_url: str
+    ) -> Dict[str, Any]:
+        """构建飞书卡片消息（字段拆分）"""
+        fields = self._extract_fields(data)
+        field_elements = []
 
-    def _build_markdown_content(self, data: Dict[str, Any]) -> str:
-        """构建Markdown内容"""
-        return f"""**📝 加班记录通知**
+        for i in range(0, len(fields), 2):
+            pair = fields[i:i+2]
+            field_tags = []
+            for field in pair:
+                field_tags.append({
+                    "tag": "meta",
+                    "label": field['label'],
+                    "value": field['value']
+                })
 
->日期: **{data.get('日期', '')}**
-> 用户: **{data.get('用户', '')}**
-- 加班类型: {data.get('加班类型', '')}
-- 加班时长: {data.get('加班时长', '')}小时
-- 请假类型: {data.get('请假类型', '无')} ({data.get('请假时长', '无')})
-- 加班工资: **{data.get('加班工资', '0')}**
-- 提交时间: {data.get('提交时间', '')}
-- 提交方式: {data.get('提交方式', '')}"""
+            if len(pair) == 1:
+                field_elements.append({
+                    "tag": "column_set",
+                    "flex_mode": "none",
+                    "horizontal_spacing": "default",
+                    "vertical_spacing": "default",
+                    "columns": [
+                        {
+                            "tag": "column",
+                            "width": "stretch",
+                            "vertical_spacing": "default",
+                            "horizontal_align": "default",
+                            "elements": [{"tag": "meta", "label": pair[0]['label'], "value": pair[0]['value']}]
+                        },
+                        {
+                            "tag": "column",
+                            "width": "stretch",
+                            "vertical_spacing": "default",
+                            "horizontal_align": "default",
+                            "elements": [{"tag": "meta", "label": "", "value": ""}]
+                        }
+                    ]
+                })
+            else:
+                field_elements.append({
+                    "tag": "column_set",
+                    "flex_mode": "none",
+                    "horizontal_spacing": "default",
+                    "vertical_spacing": "default",
+                    "columns": [
+                        {
+                            "tag": "column",
+                            "width": "stretch",
+                            "vertical_spacing": "default",
+                            "horizontal_align": "default",
+                            "elements": [{"tag": "meta", "label": pair[0]['label'], "value": pair[0]['value']}]
+                        },
+                        {
+                            "tag": "column",
+                            "width": "stretch",
+                            "vertical_spacing": "default",
+                            "horizontal_align": "default",
+                            "elements": [{"tag": "meta", "label": pair[1]['label'], "value": pair[1]['value']}]
+                        }
+                    ]
+                })
 
-    def _build_slack_content(self, data: Dict[str, Any]) -> str:
-        """构建Slack内容"""
-        return f"""*📝 加班记录通知*
-• *日期*: {data.get('日期', '')}
-• *用户*: {data.get('用户', '')}
-• *加班类型*: {data.get('加班类型', '')}
-• *加班时长*: {data.get('加班时长', '')}小时
-• *请假类型*: {data.get('请假类型', '无')} ({data.get('请假时长', '无')})
-• *加班工资*: *{data.get('加班工资', '0')}*
-• *提交时间*: {data.get('提交时间', '')}
-• *提交方式*: {data.get('提交方式', '')}"""
+        elements = [
+            {
+                "tag": "div",
+                "text": {
+                    "tag": "lark_md",
+                    "content": f"**📝 加班记录通知**\n>提交方式: {data.get('提交方式', '未知')}"
+                }
+            },
+            *field_elements,
+            {"tag": "hr"},
+            {
+                "tag": "action",
+                "actions": [
+                    {
+                        "tag": "button",
+                        "text": {
+                            "tag": "plain_text",
+                            "content": f"📊 打开Web服务"
+                        },
+                        "url": web_url,
+                        "type": "primary"
+                    }
+                ]
+            }
+        ]
 
-    def _send_with_retry(self, url: str, payload: Dict[str, Any], timeout: int, retry: int, platform: str) -> bool:
+        return {
+            "msg_type": "interactive",
+            "card": {
+                "header": {
+                    "title": {
+                        "tag": "plain_text",
+                        "content": "📋 加班记录通知"
+                    },
+                    "template": "blue"
+                },
+                "elements": elements
+            }
+        }
+
+    def _extract_fields(self, data: Dict[str, Any]) -> List[Dict[str, str]]:
+        """提取字段列表"""
+        return [
+            {"label": "📅 日期", "value": data.get('日期', '-')},
+            {"label": "👤 用户", "value": data.get('用户', '-')},
+            {"label": "📆 加班类型", "value": data.get('加班类型', '-')},
+            {"label": "⏰ 加班时长", "value": f"{data.get('加班时长', '-')}小时"},
+            {"label": "🏥 请假类型", "value": data.get('请假类型', '无')},
+            {"label": "⏳ 请假时长", "value": f"{data.get('请假时长', '-')}小时"},
+            {"label": "💰 加班工资", "value": data.get('加班工资', '0')},
+            {"label": "🕐 提交时间", "value": data.get('提交时间', '-')},
+        ]
+
+    def _build_dingtalk_markdown(
+        self,
+        data: Dict[str, Any],
+        ip_port: str,
+        web_url: str
+    ) -> Dict[str, Any]:
+        """构建钉钉Markdown消息"""
+        fields = self._extract_fields(data)
+
+        content_lines = ["**📋 加班记录通知**\n"]
+        for field in fields:
+            content_lines.append(f"- **{field['label']}**: {field['value']}")
+
+        content_lines.append(f"\n---\n[📊 打开Web服务]({web_url})")
+
+        return {
+            "msgtype": "markdown",
+            "markdown": {
+                "title": "加班记录通知",
+                "text": "\n".join(content_lines)
+            }
+        }
+
+    def _build_wechat_text(
+        self,
+        data: Dict[str, Any],
+        ip_port: str,
+        web_url: str
+    ) -> Dict[str, Any]:
+        """构建企业微信文本消息"""
+        fields = self._extract_fields(data)
+
+        content_lines = ["📋 加班记录通知"]
+        for field in fields:
+            content_lines.append(f"{field['label']}: {field['value']}")
+
+        content_lines.append(f"\n📊 Web服务: {web_url}")
+
+        return {
+            "msgtype": "text",
+            "text": {
+                "content": "\n".join(content_lines)
+            }
+        }
+
+    def _build_slack_blocks(
+        self,
+        data: Dict[str, Any],
+        ip_port: str,
+        web_url: str
+    ) -> Dict[str, Any]:
+        """构建Slack Block Kit消息"""
+        fields = self._extract_fields(data)
+
+        section_fields = []
+        for field in fields:
+            section_fields.append({
+                "type": "mrkdwn",
+                "text": f"*{field['label']}*\n{field['value']}"
+            })
+
+        blocks = [
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": "📋 加班记录通知",
+                    "emoji": True
+                }
+            },
+            {
+                "type": "section",
+                "fields": section_fields
+            },
+            {
+                "type": "divider"
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "📊 打开Web服务",
+                            "emoji": True
+                        },
+                        "url": web_url,
+                        "style": "primary"
+                    }
+                ]
+            }
+        ]
+
+        return {"blocks": blocks}
+
+    def _send_with_retry(
+        self,
+        url: str,
+        payload: Dict[str, Any],
+        timeout: int,
+        retry: int,
+        platform: str
+    ) -> bool:
         """带重试的发送"""
         platform_name = self.platform_configs.get(platform, {}).get('name', platform)
 
@@ -285,7 +380,6 @@ class WebhookModule:
         platform = webhook_config.get('platform', 'feishu')
         timeout = webhook_config.get('timeout', 10)
 
-        # 测试数据
         test_data = {
             '日期': '2024-01-04',
             '用户': '测试用户',
@@ -328,11 +422,11 @@ class WebhookModule:
     def get_format_info(self, platform: str) -> str:
         """获取平台格式说明"""
         format_map = {
-            'feishu': 'Interactive卡片 + 按钮(含IP:端口)',
-            'dingtalk': 'Markdown格式 + 链接，因钉钉自定义机器人配置安全设置，请设置**加班**为关键词',
-            'wechat': 'Text文本 + IP:端口',
-            'lark': 'Interactive卡片 + 按钮',
-            'slack': 'Block JSON + 按钮',
-            'custom': '完整数据JSON + IP:端口'
+            'feishu': 'Interactive卡片（字段拆分）+ 按钮',
+            'dingtalk': 'Markdown格式 + 链接，请设置**加班**为关键词',
+            'wechat': 'Text文本（字段分行）',
+            'lark': 'Interactive卡片（字段拆分）+ 按钮',
+            'slack': 'Block Kit（字段分列）+ 按钮',
+            'custom': '完整数据JSON'
         }
         return format_map.get(platform, '未知格式')
