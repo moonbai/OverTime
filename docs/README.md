@@ -264,7 +264,7 @@ ruff check .
 
 ## 📝 更新日志
 
-### v2.0 (2024-01)
+### v2.0 (2026-05)
 - ✨ 新增数据模型 (`core/models.py`)
 - ✨ 新增常量定义 (`core/constants.py`)
 - ✨ 优化 Webhook 消息格式（字段拆分）
